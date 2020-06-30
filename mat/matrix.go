@@ -27,6 +27,9 @@ func NewEmptyMatrix(rows int, cols int) *Matrix {
 
 // NewMatrixWithValues creates a new matrix with the given values.
 func NewMatrixWithValues(values [][]float32) *Matrix {
+	if len(values) == 0 {
+		return &Matrix{Rows: 1, Cols: 1, values: [][]float32{{0.0}}}
+	}
 	rows := len(values)
 	cols := len(values[0])
 	matrixValues := make([][]float32, rows)

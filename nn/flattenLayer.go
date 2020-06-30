@@ -8,8 +8,10 @@ import (
 
 // FlattenLayer is a layer that flattens data into length 1.
 type FlattenLayer struct {
-	inputs  []*mat.Matrix
-	outputs *mat.Matrix
+	inputShape  LayerShape
+	outputShape LayerShape
+	inputs      []*mat.Matrix
+	outputs     *mat.Matrix
 }
 
 // NewFlattenLayer creates a new instance of a flattening layer.
@@ -21,8 +23,10 @@ func NewFlattenLayer(inputRows int, inputCols int, inputLength int) *FlattenLaye
 	outputSize := inputRows * inputCols * inputLength
 	outputs := mat.NewEmptyMatrix(1, outputSize)
 	return &FlattenLayer{
-		inputs:  inputs,
-		outputs: outputs,
+		inputShape:  LayerShape{inputRows, inputCols, inputLength},
+		outputShape: LayerShape{1, outputSize, 1},
+		inputs:      inputs,
+		outputs:     outputs,
 	}
 }
 
@@ -33,23 +37,23 @@ func (layer *FlattenLayer) Copy() Layer {
 
 // InputShape returns the rows, columns and length of the inputs to the layer.
 func (layer *FlattenLayer) InputShape() LayerShape {
-	return LayerShape{layer.inputs[0].Rows, layer.inputs[0].Cols, len(layer.inputs)}
+	return layer.inputShape
 }
 
 // OutputShape returns the rows, columns and length of outputs from the layer.
 func (layer *FlattenLayer) OutputShape() LayerShape {
-	return LayerShape{layer.outputs.Rows, layer.outputs.Cols, 1}
+	return layer.outputShape
 }
 
 // FeedForward flattens the data from its input length to a length of 1.
 func (layer *FlattenLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
-	index := 0
+	flattenedIndex := 0
 	for i, input := range inputs {
 		layer.inputs[i].SetAll(input)
 		for row := 0; row < input.Rows; row++ {
 			for col := 0; col < input.Cols; col++ {
-				layer.outputs.Set(0, index, input.Get(row, col))
-				index++
+				layer.outputs.Set(0, flattenedIndex, input.Get(row, col))
+				flattenedIndex++
 			}
 		}
 	}
@@ -64,7 +68,8 @@ func (layer *FlattenLayer) BackPropagate(outputs []*mat.Matrix, learningRate flo
 // FlattenLayerData represents a serialized layer that can be saved to a file.
 type FlattenLayerData struct {
 	Type        LayerType `json:"type"`
-	InputSize   int       `json:"inputSize"`
+	InputRows   int       `json:"inputRows"`
+	InputCols   int       `json:"inputCols"`
 	InputLength int       `json:"inputLength"`
 }
 
@@ -72,7 +77,8 @@ type FlattenLayerData struct {
 func (layer *FlattenLayer) MarshalJSON() ([]byte, error) {
 	data := FlattenLayerData{
 		Type:        LayerTypeFlatten,
-		InputSize:   layer.InputShape().Cols,
+		InputRows:   layer.InputShape().Rows,
+		InputCols:   layer.InputShape().Cols,
 		InputLength: layer.InputShape().Length,
 	}
 	return json.Marshal(data)
@@ -87,9 +93,11 @@ func (layer *FlattenLayer) UnmarshalJSON(b []byte) error {
 	}
 	layer.inputs = make([]*mat.Matrix, data.InputLength)
 	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = mat.NewEmptyMatrix(1, data.InputSize)
+		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
 	}
-	outputSize := data.InputSize * data.InputLength
+	outputSize := data.InputRows * data.InputCols * data.InputLength
 	layer.outputs = mat.NewEmptyMatrix(1, outputSize)
+	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputLength}
+	layer.outputShape = LayerShape{1, outputSize, 1}
 	return nil
 }

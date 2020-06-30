@@ -8,29 +8,33 @@ import (
 
 // PoolingLayer is a layer that pools data into a smaller form.
 type PoolingLayer struct {
-	inputs   []*mat.Matrix
-	outputs  []*mat.Matrix
-	PoolSize int
-	Pooling  PoolingFunction
+	inputShape  LayerShape
+	outputShape LayerShape
+	inputs      []*mat.Matrix
+	outputs     []*mat.Matrix
+	PoolSize    int
+	Pooling     PoolingFunction
 }
 
 // NewPoolingLayer creates a new instance of a pooling layer.
-func NewPoolingLayer(inputRows int, inputCols int, length int, poolSize int, pooling PoolingFunction) *PoolingLayer {
-	inputs := make([]*mat.Matrix, length)
-	for i := 0; i < length; i++ {
+func NewPoolingLayer(inputRows int, inputCols int, inputLength int, poolSize int, pooling PoolingFunction) *PoolingLayer {
+	inputs := make([]*mat.Matrix, inputLength)
+	for i := 0; i < inputLength; i++ {
 		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
 	}
 	outputRows := inputRows / poolSize
 	outputCols := inputCols / poolSize
-	outputs := make([]*mat.Matrix, length)
-	for i := 0; i < length; i++ {
+	outputs := make([]*mat.Matrix, inputLength)
+	for i := 0; i < inputLength; i++ {
 		outputs[i] = mat.NewEmptyMatrix(outputRows, outputCols)
 	}
 	return &PoolingLayer{
-		inputs:   inputs,
-		outputs:  outputs,
-		PoolSize: poolSize,
-		Pooling:  pooling,
+		inputShape:  LayerShape{inputRows, inputCols, inputLength},
+		outputShape: LayerShape{outputRows, outputCols, inputLength},
+		inputs:      inputs,
+		outputs:     outputs,
+		PoolSize:    poolSize,
+		Pooling:     pooling,
 	}
 }
 
@@ -41,12 +45,12 @@ func (layer *PoolingLayer) Copy() Layer {
 
 // InputShape returns the rows, columns and length of the inputs to the layer.
 func (layer *PoolingLayer) InputShape() LayerShape {
-	return LayerShape{layer.inputs[0].Rows, layer.inputs[0].Cols, len(layer.inputs)}
+	return layer.inputShape
 }
 
 // OutputShape returns the rows, columns and length of outputs from the layer.
 func (layer *PoolingLayer) OutputShape() LayerShape {
-	return LayerShape{layer.outputs[0].Rows, layer.outputs[0].Cols, len(layer.outputs)}
+	return layer.outputShape
 }
 
 // FeedForward reduces the input data by the pool size.
@@ -72,23 +76,23 @@ func (layer *PoolingLayer) BackPropagate(outputs []*mat.Matrix, learningRate flo
 
 // PoolingLayerData represents a serialized layer that can be saved to a file.
 type PoolingLayerData struct {
-	Type      LayerType     `json:"type"`
-	InputRows int           `json:"inputRows"`
-	InputCols int           `json:"inputCols"`
-	Length    int           `json:"length"`
-	PoolSize  int           `json:"poolSize"`
-	Pooling   PoolingMethod `json:"pooling"`
+	Type        LayerType     `json:"type"`
+	InputRows   int           `json:"inputRows"`
+	InputCols   int           `json:"inputCols"`
+	InputLength int           `json:"inputLength"`
+	PoolSize    int           `json:"poolSize"`
+	Pooling     PoolingMethod `json:"pooling"`
 }
 
 // MarshalJSON converts the layer to JSON.
 func (layer *PoolingLayer) MarshalJSON() ([]byte, error) {
 	data := PoolingLayerData{
-		Type:      LayerTypePooling,
-		InputRows: layer.InputShape().Rows,
-		InputCols: layer.InputShape().Cols,
-		Length:    layer.InputShape().Length,
-		PoolSize:  layer.PoolSize,
-		Pooling:   layer.Pooling.Method,
+		Type:        LayerTypePooling,
+		InputRows:   layer.InputShape().Rows,
+		InputCols:   layer.InputShape().Cols,
+		InputLength: layer.InputShape().Length,
+		PoolSize:    layer.PoolSize,
+		Pooling:     layer.Pooling.Method,
 	}
 	return json.Marshal(data)
 }
@@ -100,17 +104,19 @@ func (layer *PoolingLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*mat.Matrix, data.Length)
-	for i := 0; i < data.Length; i++ {
+	layer.inputs = make([]*mat.Matrix, data.InputLength)
+	for i := 0; i < data.InputLength; i++ {
 		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
 	}
 	outputRows := data.InputRows / data.PoolSize
 	outputCols := data.InputCols / data.PoolSize
-	layer.outputs = make([]*mat.Matrix, data.Length)
-	for i := 0; i < data.Length; i++ {
+	layer.outputs = make([]*mat.Matrix, data.InputLength)
+	for i := 0; i < data.InputLength; i++ {
 		layer.outputs[i] = mat.NewEmptyMatrix(outputRows, outputCols)
 	}
 	layer.PoolSize = data.PoolSize
 	layer.Pooling = poolingFunctionOfMethod(data.Pooling)
+	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputLength}
+	layer.outputShape = LayerShape{outputRows, outputCols, data.InputLength}
 	return nil
 }

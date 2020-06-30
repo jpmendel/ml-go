@@ -10,18 +10,18 @@ import (
 )
 
 type TrainingData struct {
-	Inputs  [][]float32
-	Targets [][]float32
+	Inputs  [][][]float32
+	Targets [][][]float32
 }
 
 func TestNeuralNetworkCopy(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
-	neuralNetwork.AddLayer(NewDenseLayer(2, 2, ActivationRELU))
+	neuralNetwork.Add(NewDenseLayer(2, 2, ActivationRELU))
 
 	shallow := neuralNetwork
 	deep := neuralNetwork.Copy()
 
-	neuralNetwork.AddLayer(NewDenseLayer(2, 1, ActivationRELU))
+	neuralNetwork.Add(NewDenseLayer(2, 1, ActivationRELU))
 
 	shallowLayers := shallow.LayerCount()
 	if shallowLayers != 2 {
@@ -36,8 +36,10 @@ func TestNeuralNetworkCopy(t *testing.T) {
 
 func TestNeuralNetworkAddGetLayers(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
-	neuralNetwork.AddLayer(NewDenseLayer(2, 3, ActivationSigmoid))
-	neuralNetwork.AddLayer(NewDenseLayer(3, 1, ActivationSigmoid))
+	neuralNetwork.Add(
+		NewDenseLayer(2, 3, ActivationSigmoid),
+		NewDenseLayer(3, 1, ActivationSigmoid),
+	)
 
 	firstLayer := neuralNetwork.LayerAt(0)
 	if firstLayer.InputShape().Cols != 2 || firstLayer.OutputShape().Cols != 3 {
@@ -54,26 +56,28 @@ func TestNeuralNetworkXOR(t *testing.T) {
 	rand.Seed(time.Now().Unix())
 	trainingData := []TrainingData{
 		TrainingData{
-			Inputs:  [][]float32{{0, 0}},
-			Targets: [][]float32{{0}},
+			Inputs:  [][][]float32{{{0, 0}}},
+			Targets: [][][]float32{{{0}}},
 		},
 		TrainingData{
-			Inputs:  [][]float32{{0, 1}},
-			Targets: [][]float32{{1}},
+			Inputs:  [][][]float32{{{0, 1}}},
+			Targets: [][][]float32{{{1}}},
 		},
 		TrainingData{
-			Inputs:  [][]float32{{1, 0}},
-			Targets: [][]float32{{1}},
+			Inputs:  [][][]float32{{{1, 0}}},
+			Targets: [][][]float32{{{1}}},
 		},
 		TrainingData{
-			Inputs:  [][]float32{{1, 1}},
-			Targets: [][]float32{{0}},
+			Inputs:  [][][]float32{{{1, 1}}},
+			Targets: [][][]float32{{{0}}},
 		},
 	}
 
 	neuralNetwork := NewNeuralNetwork()
-	neuralNetwork.AddLayer(NewDenseLayer(2, 2, ActivationSigmoid))
-	neuralNetwork.AddLayer(NewDenseLayer(2, 1, ActivationSigmoid))
+	neuralNetwork.Add(
+		NewDenseLayer(2, 2, ActivationSigmoid),
+		NewDenseLayer(2, 1, ActivationSigmoid),
+	)
 
 	for i := 0; i < 10000; i++ {
 		index := rand.Intn(len(trainingData))
@@ -88,42 +92,43 @@ func TestNeuralNetworkXOR(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in Predict: %s", err.Error())
 	}
-	if result1[0][0] > 0.1 {
-		t.Errorf("Incorrect prediction for [0, 0]: %.3f", result1[0])
+	if result1[0][0][0] > 0.1 {
+		t.Errorf("Incorrect prediction for [0, 0]: %.3f", result1[0][0][0])
 	}
 
 	result2, err := neuralNetwork.Predict(trainingData[1].Inputs)
 	if err != nil {
 		t.Fatalf("Error in Predict: %s", err.Error())
 	}
-	if result2[0][0] < 0.9 {
-		t.Errorf("Incorrect prediction for [0, 1]: %.3f", result2[0])
+	if result2[0][0][0] < 0.9 {
+		t.Errorf("Incorrect prediction for [0, 1]: %.3f", result2[0][0][0])
 	}
 
 	result3, err := neuralNetwork.Predict(trainingData[2].Inputs)
 	if err != nil {
 		t.Fatalf("Error in Predict: %s", err.Error())
 	}
-	if result3[0][0] < 0.9 {
-		t.Errorf("Incorrect prediction for [1, 0]: %.3f", result3[0])
+	if result3[0][0][0] < 0.9 {
+		t.Errorf("Incorrect prediction for [1, 0]: %.3f", result3[0][0][0])
 	}
 
 	result4, err := neuralNetwork.Predict(trainingData[3].Inputs)
 	if err != nil {
 		t.Fatalf("Error in Predict: %s", err.Error())
 	}
-	if result4[0][0] > 0.1 {
-		t.Errorf("Incorrect prediction for [1, 1]: %.3f", result4[0])
+	if result4[0][0][0] > 0.1 {
+		t.Errorf("Incorrect prediction for [1, 1]: %.3f", result4[0][0][0])
 	}
 }
 
 func TestNeuralNetworkSaveLoad(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
-	neuralNetwork.AddLayer(NewConvolutionLayer(16, 16, 1, []*mat.Matrix{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU))
-	neuralNetwork.AddLayer(NewPoolingLayer(16, 16, 2, 2, PoolingMax))
-	neuralNetwork.AddLayer(NewFlattenLayer(4, 4, 2))
-	neuralNetwork.AddLayer(NewDenseLayer(32, 16, ActivationRELU))
-	neuralNetwork.AddLayer(NewDenseLayer(16, 8, ActivationSoftmax))
+	conv := NewConvolutionLayer(16, 16, 1, []*mat.Matrix{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU)
+	pool := NewPoolingLayer(conv.OutputShape().Rows, conv.OutputShape().Cols, conv.OutputShape().Length, 2, PoolingMax)
+	flat := NewFlattenLayer(pool.OutputShape().Rows, pool.OutputShape().Cols, pool.OutputShape().Length)
+	dense1 := NewDenseLayer(flat.OutputShape().Cols, 16, ActivationRELU)
+	dense2 := NewDenseLayer(dense1.OutputShape().Cols, 8, ActivationSoftmax)
+	neuralNetwork.Add(conv, pool, flat, dense1, dense2)
 
 	err := neuralNetwork.SaveToFile("neuralNetwork.json")
 	if err != nil {

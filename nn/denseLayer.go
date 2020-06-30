@@ -9,12 +9,14 @@ import (
 
 // DenseLayer is a fully connected layer for a neural network.
 type DenseLayer struct {
-	inputs     *mat.Matrix
-	outputs    *mat.Matrix
-	Weights    *mat.Matrix
-	Bias       *mat.Matrix
-	PrevUpdate *mat.Matrix
-	Activation ActivationFunction
+	inputShape  LayerShape
+	outputShape LayerShape
+	inputs      *mat.Matrix
+	outputs     *mat.Matrix
+	Weights     *mat.Matrix
+	Bias        *mat.Matrix
+	PrevUpdate  *mat.Matrix
+	Activation  ActivationFunction
 }
 
 // NewDenseLayer creates a new instance of a fully connected layer.
@@ -27,12 +29,14 @@ func NewDenseLayer(inputSize int, outputSize int, activation ActivationFunction)
 	bias.SetRandom(-1.0, 1.0)
 	prevUpdate := mat.NewEmptyMatrix(inputSize, outputSize)
 	return &DenseLayer{
-		inputs:     inputs,
-		outputs:    outputs,
-		Weights:    weights,
-		Bias:       bias,
-		PrevUpdate: prevUpdate,
-		Activation: activation,
+		inputShape:  LayerShape{1, inputSize, 1},
+		outputShape: LayerShape{1, outputSize, 1},
+		inputs:      inputs,
+		outputs:     outputs,
+		Weights:     weights,
+		Bias:        bias,
+		PrevUpdate:  prevUpdate,
+		Activation:  activation,
 	}
 }
 
@@ -46,12 +50,12 @@ func (layer *DenseLayer) Copy() Layer {
 
 // InputShape returns the rows, columns and length of the inputs to the layer.
 func (layer *DenseLayer) InputShape() LayerShape {
-	return LayerShape{layer.inputs.Rows, layer.inputs.Cols, 1}
+	return layer.inputShape
 }
 
 // OutputShape returns the rows, columns and length of outputs from the layer.
 func (layer *DenseLayer) OutputShape() LayerShape {
-	return LayerShape{layer.outputs.Rows, layer.outputs.Cols, 1}
+	return layer.outputShape
 }
 
 // FeedForward computes the outputs of the layer based on the inputs, weights and bias.
@@ -151,5 +155,7 @@ func (layer *DenseLayer) UnmarshalJSON(b []byte) error {
 	layer.Weights = mat.NewMatrixWithValues(data.Weights)
 	layer.Bias = mat.NewMatrixWithValues(data.Bias)
 	layer.Activation = activationFunctionOfType(data.Activation)
+	layer.inputShape = LayerShape{1, data.InputSize, 1}
+	layer.outputShape = LayerShape{1, data.OutputSize, 1}
 	return nil
 }

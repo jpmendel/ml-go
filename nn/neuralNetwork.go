@@ -22,7 +22,7 @@ func NewNeuralNetwork() *NeuralNetwork {
 func (neuralNetwork *NeuralNetwork) Copy() *NeuralNetwork {
 	newNeuralNetwork := NewNeuralNetwork()
 	for _, layer := range neuralNetwork.layers {
-		newNeuralNetwork.AddLayer(layer.Copy())
+		newNeuralNetwork.Add(layer.Copy())
 	}
 	return newNeuralNetwork
 }
@@ -32,7 +32,7 @@ func (neuralNetwork *NeuralNetwork) LayerCount() int {
 	return len(neuralNetwork.layers)
 }
 
-// LayerAt gets a fully connected layer at a certain index.
+// LayerAt gets a layer at a certain index.
 func (neuralNetwork *NeuralNetwork) LayerAt(index int) Layer {
 	if index < 0 || index >= len(neuralNetwork.layers) {
 		return nil
@@ -40,33 +40,38 @@ func (neuralNetwork *NeuralNetwork) LayerAt(index int) Layer {
 	return neuralNetwork.layers[index]
 }
 
-// AddLayer adds a new fully connected layer to the end of the neural network.
-func (neuralNetwork *NeuralNetwork) AddLayer(layer Layer) error {
-	if len(neuralNetwork.layers) > 0 {
-		lastLayer := neuralNetwork.layers[len(neuralNetwork.layers)-1]
-		if lastLayer.OutputShape() != layer.InputShape() {
-			return fmt.Errorf(
-				"Output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
-				lastLayer.OutputShape().Rows, lastLayer.OutputShape().Cols, lastLayer.OutputShape().Length,
-				layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Length,
-			)
+// Add adds a number of new layers to the neural network.
+func (neuralNetwork *NeuralNetwork) Add(layers ...Layer) error {
+	for _, layer := range layers {
+		if len(neuralNetwork.layers) > 0 {
+			lastLayer := neuralNetwork.layers[len(neuralNetwork.layers)-1]
+			if lastLayer.OutputShape() != layer.InputShape() {
+				return fmt.Errorf(
+					"Output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
+					lastLayer.OutputShape().Rows, lastLayer.OutputShape().Cols, lastLayer.OutputShape().Length,
+					layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Length,
+				)
+			}
 		}
+		neuralNetwork.layers = append(neuralNetwork.layers, layer)
 	}
-	neuralNetwork.layers = append(neuralNetwork.layers, layer)
 	return nil
 }
 
 // Predict generates a prediction for a certain set of inputs.
-func (neuralNetwork *NeuralNetwork) Predict(inputs [][]float32) ([][]float32, error) {
+func (neuralNetwork *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32, error) {
 	outputs, err := neuralNetwork.feedForward(inputs)
 	if err != nil {
 		return nil, err
 	}
-	outputArray := make([][]float32, outputs.Rows)
-	for row := 0; row < outputs.Rows; row++ {
-		outputArray[row] = make([]float32, outputs.Cols)
-		for col := 0; col < outputs.Cols; col++ {
-			outputArray[row][col] = outputs.Get(row, col)
+	outputArray := make([][][]float32, len(outputs))
+	for i, output := range outputs {
+		outputArray[i] = make([][]float32, output.Rows)
+		for row := 0; row < output.Rows; row++ {
+			outputArray[i][row] = make([]float32, output.Cols)
+			for col := 0; col < output.Cols; col++ {
+				outputArray[i][row][col] = output.Get(row, col)
+			}
 		}
 	}
 	return outputArray, nil
@@ -74,21 +79,27 @@ func (neuralNetwork *NeuralNetwork) Predict(inputs [][]float32) ([][]float32, er
 
 // Train takes a set of inputs and their respective targets, and adjusts the layers to produce the
 // given outputs through supervised learning.
-func (neuralNetwork *NeuralNetwork) Train(inputs [][]float32, targets [][]float32, learningRate float32, momentum float32) error {
+func (neuralNetwork *NeuralNetwork) Train(inputs [][][]float32, targets [][][]float32, learningRate float32, momentum float32) error {
 	outputs, err := neuralNetwork.feedForward(inputs)
 	if err != nil {
 		return err
 	}
-	deltas := mat.NewMatrixWithValues(targets)
-	err = deltas.SubtractMatrix(outputs)
-	if err != nil {
-		return err
+	deltas := make([]*mat.Matrix, len(targets))
+	for i, target := range targets {
+		deltas[i] = mat.NewMatrixWithValues(target)
+		err = deltas[i].SubtractMatrix(outputs[i])
+		if err != nil {
+			return err
+		}
 	}
 	return neuralNetwork.backPropagate(deltas, learningRate, momentum)
 }
 
-func (neuralNetwork *NeuralNetwork) feedForward(inputs [][]float32) (*mat.Matrix, error) {
-	nextInputs := []*mat.Matrix{mat.NewMatrixWithValues(inputs)}
+func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) ([]*mat.Matrix, error) {
+	nextInputs := make([]*mat.Matrix, len(inputs))
+	for i, input := range inputs {
+		nextInputs[i] = mat.NewMatrixWithValues(input)
+	}
 	var err error
 	for _, layer := range neuralNetwork.layers {
 		nextInputs, err = layer.FeedForward(nextInputs)
@@ -96,11 +107,11 @@ func (neuralNetwork *NeuralNetwork) feedForward(inputs [][]float32) (*mat.Matrix
 			return nil, err
 		}
 	}
-	return nextInputs[0], nil
+	return nextInputs, nil
 }
 
-func (neuralNetwork *NeuralNetwork) backPropagate(deltas *mat.Matrix, learningRate float32, momentum float32) error {
-	nextDeltas := []*mat.Matrix{deltas}
+func (neuralNetwork *NeuralNetwork) backPropagate(deltas []*mat.Matrix, learningRate float32, momentum float32) error {
+	nextDeltas := deltas
 	var err error
 	for i := len(neuralNetwork.layers) - 1; i >= 0; i-- {
 		layer := neuralNetwork.layers[i]
@@ -152,7 +163,7 @@ func (neuralNetwork *NeuralNetwork) LoadFromFile(fileName string) error {
 		if err != nil {
 			return err
 		}
-		err = neuralNetwork.AddLayer(layer)
+		err = neuralNetwork.Add(layer)
 		if err != nil {
 			return err
 		}

@@ -8,28 +8,32 @@ import (
 
 // ConvolutionLayer is a layer that performs convolutional filters on data.
 type ConvolutionLayer struct {
-	inputs     []*mat.Matrix
-	outputs    []*mat.Matrix
-	Filters    []*mat.Matrix
-	Activation ActivationFunction
+	inputShape  LayerShape
+	outputShape LayerShape
+	inputs      []*mat.Matrix
+	outputs     []*mat.Matrix
+	Filters     []*mat.Matrix
+	Activation  ActivationFunction
 }
 
 // NewConvolutionLayer creates a new instance of a convolutional layer.
-func NewConvolutionLayer(rows int, cols int, inputLength int, filters []*mat.Matrix, activation ActivationFunction) *ConvolutionLayer {
+func NewConvolutionLayer(inputRows int, inputCols int, inputLength int, filters []*mat.Matrix, activation ActivationFunction) *ConvolutionLayer {
 	inputs := make([]*mat.Matrix, inputLength)
 	for i := 0; i < inputLength; i++ {
-		inputs[i] = mat.NewEmptyMatrix(rows, cols)
+		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
 	}
 	outputLength := inputLength * len(filters)
 	outputs := make([]*mat.Matrix, outputLength)
 	for i := 0; i < outputLength; i++ {
-		outputs[i] = mat.NewEmptyMatrix(rows, cols)
+		outputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
 	}
 	return &ConvolutionLayer{
-		inputs:     inputs,
-		outputs:    outputs,
-		Filters:    filters,
-		Activation: activation,
+		inputShape:  LayerShape{inputRows, inputCols, inputLength},
+		outputShape: LayerShape{inputRows, inputCols, outputLength},
+		inputs:      inputs,
+		outputs:     outputs,
+		Filters:     filters,
+		Activation:  activation,
 	}
 }
 
@@ -46,12 +50,12 @@ func (layer *ConvolutionLayer) Copy() Layer {
 
 // InputShape returns the rows, columns and length of the inputs to the layer.
 func (layer *ConvolutionLayer) InputShape() LayerShape {
-	return LayerShape{layer.inputs[0].Rows, layer.inputs[0].Cols, len(layer.inputs)}
+	return layer.inputShape
 }
 
 // OutputShape returns the rows, columns and length of outputs from the layer.
 func (layer *ConvolutionLayer) OutputShape() LayerShape {
-	return LayerShape{layer.outputs[0].Rows, layer.outputs[0].Cols, len(layer.outputs)}
+	return layer.outputShape
 }
 
 // FeedForward applies convolutions to the input for each of the filters.
@@ -62,7 +66,7 @@ func (layer *ConvolutionLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix,
 			for row := 0; row < input.Rows; row++ {
 				for col := 0; col < input.Cols; col++ {
 					value := layer.convolution(input, row, col, filter)
-					input.Set(row, col, value)
+					layer.outputs[i].Set(row, col, value)
 				}
 			}
 		}
@@ -93,9 +97,9 @@ func (layer *ConvolutionLayer) convolution(matrix *mat.Matrix, row int, col int,
 // ConvolutionLayerData represents a serialized layer that can be saved to a file.
 type ConvolutionLayerData struct {
 	Type        LayerType      `json:"type"`
-	Rows        int            `json:"inputRows"`
-	Cols        int            `json:"inputCols"`
-	InputLength int            `json:"length"`
+	InputRows   int            `json:"inputRows"`
+	InputCols   int            `json:"inputCols"`
+	InputLength int            `json:"inputLength"`
 	Filters     [][][]float32  `json:"filters"`
 	Activation  ActivationType `json:"activation"`
 }
@@ -108,8 +112,8 @@ func (layer *ConvolutionLayer) MarshalJSON() ([]byte, error) {
 	}
 	data := ConvolutionLayerData{
 		Type:        LayerTypeConvolution,
-		Rows:        layer.InputShape().Rows,
-		Cols:        layer.InputShape().Cols,
+		InputRows:   layer.InputShape().Rows,
+		InputCols:   layer.InputShape().Cols,
 		InputLength: layer.InputShape().Length,
 		Filters:     filters,
 		Activation:  layer.Activation.Type,
@@ -126,17 +130,19 @@ func (layer *ConvolutionLayer) UnmarshalJSON(b []byte) error {
 	}
 	layer.inputs = make([]*mat.Matrix, data.InputLength)
 	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = mat.NewEmptyMatrix(data.Rows, data.Cols)
+		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
 	}
 	outputLength := data.InputLength * len(data.Filters)
 	layer.outputs = make([]*mat.Matrix, outputLength)
 	for i := 0; i < outputLength; i++ {
-		layer.outputs[i] = mat.NewEmptyMatrix(data.Rows, data.Cols)
+		layer.outputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
 	}
 	layer.Filters = make([]*mat.Matrix, len(data.Filters))
 	for i, filter := range data.Filters {
 		layer.Filters[i] = mat.NewMatrixWithValues(filter)
 	}
 	layer.Activation = activationFunctionOfType(data.Activation)
+	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputLength}
+	layer.outputShape = LayerShape{data.InputRows, data.InputCols, outputLength}
 	return nil
 }
