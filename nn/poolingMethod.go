@@ -1,9 +1,11 @@
-package ml
+package nn
+
+import "../mat"
 
 // PoolingFunction represents a function used to find a pooled value.
 type PoolingFunction struct {
 	Method          PoolingMethod
-	FindPooledValue func(*Matrix, int, int, int) float32
+	FindPooledValue func(*mat.Matrix, int, int, int) float32
 }
 
 // PoolingMethod is the identifying type of the pooling function.
@@ -20,7 +22,7 @@ const (
 // PoolingMax finds the maximum value in the pool.
 var PoolingMax = PoolingFunction{
 	Method: PoolingMethodMax,
-	FindPooledValue: func(matrix *Matrix, row int, col int, poolSize int) float32 {
+	FindPooledValue: func(matrix *mat.Matrix, row int, col int, poolSize int) float32 {
 		max := matrix.Get(row, col)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {
@@ -40,7 +42,7 @@ var PoolingMax = PoolingFunction{
 // PoolingAvg finds the average value of the pool.
 var PoolingAvg = PoolingFunction{
 	Method: PoolingMethodAvg,
-	FindPooledValue: func(matrix *Matrix, poolSize int, row int, col int) float32 {
+	FindPooledValue: func(matrix *mat.Matrix, poolSize int, row int, col int) float32 {
 		total := float32(0.0)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {

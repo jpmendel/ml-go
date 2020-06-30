@@ -1,26 +1,30 @@
-package ml
+package nn
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"../mat"
+)
 
 // PoolingLayer is a layer that pools data into a smaller form.
 type PoolingLayer struct {
-	inputs   []*Matrix
-	outputs  []*Matrix
+	inputs   []*mat.Matrix
+	outputs  []*mat.Matrix
 	PoolSize int
 	Pooling  PoolingFunction
 }
 
 // NewPoolingLayer creates a new instance of a pooling layer.
 func NewPoolingLayer(inputRows int, inputCols int, length int, poolSize int, pooling PoolingFunction) *PoolingLayer {
-	inputs := make([]*Matrix, length)
+	inputs := make([]*mat.Matrix, length)
 	for i := 0; i < length; i++ {
-		inputs[i] = NewEmptyMatrix(inputRows, inputCols)
+		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
 	}
 	outputRows := inputRows / poolSize
 	outputCols := inputCols / poolSize
-	outputs := make([]*Matrix, length)
+	outputs := make([]*mat.Matrix, length)
 	for i := 0; i < length; i++ {
-		outputs[i] = NewEmptyMatrix(outputRows, outputCols)
+		outputs[i] = mat.NewEmptyMatrix(outputRows, outputCols)
 	}
 	return &PoolingLayer{
 		inputs:   inputs,
@@ -46,7 +50,7 @@ func (layer *PoolingLayer) OutputShape() LayerShape {
 }
 
 // FeedForward reduces the input data by the pool size.
-func (layer *PoolingLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
+func (layer *PoolingLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
 	for i, input := range inputs {
 		layer.inputs[i].SetAll(input)
 		for row := 0; row < layer.outputs[i].Rows; row++ {
@@ -62,7 +66,7 @@ func (layer *PoolingLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
 }
 
 // BackPropagate does not operate on the data in a pooling layer.
-func (layer *PoolingLayer) BackPropagate(outputs []*Matrix, learningRate float32, momentum float32) ([]*Matrix, error) {
+func (layer *PoolingLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
 	return layer.inputs, nil
 }
 
@@ -96,15 +100,15 @@ func (layer *PoolingLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*Matrix, data.Length)
+	layer.inputs = make([]*mat.Matrix, data.Length)
 	for i := 0; i < data.Length; i++ {
-		layer.inputs[i] = NewEmptyMatrix(data.InputRows, data.InputCols)
+		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
 	}
 	outputRows := data.InputRows / data.PoolSize
 	outputCols := data.InputCols / data.PoolSize
-	layer.outputs = make([]*Matrix, data.Length)
+	layer.outputs = make([]*mat.Matrix, data.Length)
 	for i := 0; i < data.Length; i++ {
-		layer.outputs[i] = NewEmptyMatrix(outputRows, outputCols)
+		layer.outputs[i] = mat.NewEmptyMatrix(outputRows, outputCols)
 	}
 	layer.PoolSize = data.PoolSize
 	layer.Pooling = poolingFunctionOfMethod(data.Pooling)

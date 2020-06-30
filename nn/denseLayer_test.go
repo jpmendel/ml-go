@@ -1,6 +1,10 @@
-package ml
+package nn
 
-import "testing"
+import (
+	"testing"
+
+	"../mat"
+)
 
 func TestDenseLayer(t *testing.T) {
 	layer := NewDenseLayer(3, 2, ActivationRELU)
@@ -8,14 +12,14 @@ func TestDenseLayer(t *testing.T) {
 	originalOutputs := layer.outputs.Copy()
 	originalWeights := layer.Weights.Copy()
 
-	inputs := []*Matrix{
-		NewMatrixWithValues([][]float32{
+	inputs := []*mat.Matrix{
+		mat.NewMatrixWithValues([][]float32{
 			{3, 4, 5},
 		}),
 	}
 
-	targets := []*Matrix{
-		NewMatrixWithValues([][]float32{
+	targets := []*mat.Matrix{
+		mat.NewMatrixWithValues([][]float32{
 			{1, 2},
 		}),
 	}

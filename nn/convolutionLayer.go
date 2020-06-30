@@ -1,25 +1,29 @@
-package ml
+package nn
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"../mat"
+)
 
 // ConvolutionLayer is a layer that performs convolutional filters on data.
 type ConvolutionLayer struct {
-	inputs     []*Matrix
-	outputs    []*Matrix
-	Filters    []*Matrix
+	inputs     []*mat.Matrix
+	outputs    []*mat.Matrix
+	Filters    []*mat.Matrix
 	Activation ActivationFunction
 }
 
 // NewConvolutionLayer creates a new instance of a convolutional layer.
-func NewConvolutionLayer(rows int, cols int, inputLength int, filters []*Matrix, activation ActivationFunction) *ConvolutionLayer {
-	inputs := make([]*Matrix, inputLength)
+func NewConvolutionLayer(rows int, cols int, inputLength int, filters []*mat.Matrix, activation ActivationFunction) *ConvolutionLayer {
+	inputs := make([]*mat.Matrix, inputLength)
 	for i := 0; i < inputLength; i++ {
-		inputs[i] = NewEmptyMatrix(rows, cols)
+		inputs[i] = mat.NewEmptyMatrix(rows, cols)
 	}
 	outputLength := inputLength * len(filters)
-	outputs := make([]*Matrix, outputLength)
+	outputs := make([]*mat.Matrix, outputLength)
 	for i := 0; i < outputLength; i++ {
-		outputs[i] = NewEmptyMatrix(rows, cols)
+		outputs[i] = mat.NewEmptyMatrix(rows, cols)
 	}
 	return &ConvolutionLayer{
 		inputs:     inputs,
@@ -51,7 +55,7 @@ func (layer *ConvolutionLayer) OutputShape() LayerShape {
 }
 
 // FeedForward applies convolutions to the input for each of the filters.
-func (layer *ConvolutionLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
+func (layer *ConvolutionLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
 	for i, input := range inputs {
 		layer.inputs[i].SetAll(input)
 		for _, filter := range layer.Filters {
@@ -67,11 +71,11 @@ func (layer *ConvolutionLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) 
 }
 
 // BackPropagate does not operate on the data in a convolution layer.
-func (layer *ConvolutionLayer) BackPropagate(outputs []*Matrix, learningRate float32, momentum float32) ([]*Matrix, error) {
+func (layer *ConvolutionLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
 	return layer.inputs, nil
 }
 
-func (layer *ConvolutionLayer) convolution(matrix *Matrix, row int, col int, filter *Matrix) float32 {
+func (layer *ConvolutionLayer) convolution(matrix *mat.Matrix, row int, col int, filter *mat.Matrix) float32 {
 	sum := float32(0.0)
 	for or := -filter.Rows / 2; or <= filter.Rows/2; or++ {
 		convRow := row + or
@@ -100,7 +104,7 @@ type ConvolutionLayerData struct {
 func (layer *ConvolutionLayer) MarshalJSON() ([]byte, error) {
 	filters := make([][][]float32, len(layer.Filters))
 	for i, filter := range layer.Filters {
-		filters[i] = filter.values
+		filters[i] = filter.GetAll()
 	}
 	data := ConvolutionLayerData{
 		Type:        LayerTypeConvolution,
@@ -120,18 +124,18 @@ func (layer *ConvolutionLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*Matrix, data.InputLength)
+	layer.inputs = make([]*mat.Matrix, data.InputLength)
 	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = NewEmptyMatrix(data.Rows, data.Cols)
+		layer.inputs[i] = mat.NewEmptyMatrix(data.Rows, data.Cols)
 	}
 	outputLength := data.InputLength * len(data.Filters)
-	layer.outputs = make([]*Matrix, outputLength)
+	layer.outputs = make([]*mat.Matrix, outputLength)
 	for i := 0; i < outputLength; i++ {
-		layer.outputs[i] = NewEmptyMatrix(data.Rows, data.Cols)
+		layer.outputs[i] = mat.NewEmptyMatrix(data.Rows, data.Cols)
 	}
-	layer.Filters = make([]*Matrix, len(data.Filters))
+	layer.Filters = make([]*mat.Matrix, len(data.Filters))
 	for i, filter := range data.Filters {
-		layer.Filters[i] = NewMatrixWithValues(filter)
+		layer.Filters[i] = mat.NewMatrixWithValues(filter)
 	}
 	layer.Activation = activationFunctionOfType(data.Activation)
 	return nil

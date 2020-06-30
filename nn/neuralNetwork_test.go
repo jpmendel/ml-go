@@ -1,11 +1,12 @@
-package ml
+package nn
 
 import (
-	"log"
 	"math/rand"
 	"os"
 	"testing"
 	"time"
+
+	"../mat"
 )
 
 type TrainingData struct {
@@ -118,7 +119,7 @@ func TestNeuralNetworkXOR(t *testing.T) {
 
 func TestNeuralNetworkSaveLoad(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
-	neuralNetwork.AddLayer(NewConvolutionLayer(16, 16, 1, []*Matrix{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU))
+	neuralNetwork.AddLayer(NewConvolutionLayer(16, 16, 1, []*mat.Matrix{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU))
 	neuralNetwork.AddLayer(NewPoolingLayer(16, 16, 2, 2, PoolingMax))
 	neuralNetwork.AddLayer(NewFlattenLayer(4, 4, 2))
 	neuralNetwork.AddLayer(NewDenseLayer(32, 16, ActivationRELU))
@@ -143,10 +144,4 @@ func TestNeuralNetworkSaveLoad(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error removing test file: %s", err.Error())
 	}
-}
-
-func TestArrayInit(t *testing.T) {
-	matrix := NewEmptyMatrix(5, 5)
-	matrixSlice := []*Matrix{matrix}
-	log.Println(len(matrixSlice))
 }

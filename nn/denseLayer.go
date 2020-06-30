@@ -1,29 +1,31 @@
-package ml
+package nn
 
 import (
 	"encoding/json"
 	"fmt"
+
+	"../mat"
 )
 
 // DenseLayer is a fully connected layer for a neural network.
 type DenseLayer struct {
-	inputs     *Matrix
-	outputs    *Matrix
-	Weights    *Matrix
-	Bias       *Matrix
-	PrevUpdate *Matrix
+	inputs     *mat.Matrix
+	outputs    *mat.Matrix
+	Weights    *mat.Matrix
+	Bias       *mat.Matrix
+	PrevUpdate *mat.Matrix
 	Activation ActivationFunction
 }
 
 // NewDenseLayer creates a new instance of a fully connected layer.
 func NewDenseLayer(inputSize int, outputSize int, activation ActivationFunction) *DenseLayer {
-	inputs := NewEmptyMatrix(1, inputSize)
-	outputs := NewEmptyMatrix(1, outputSize)
-	weights := NewEmptyMatrix(inputSize, outputSize)
+	inputs := mat.NewEmptyMatrix(1, inputSize)
+	outputs := mat.NewEmptyMatrix(1, outputSize)
+	weights := mat.NewEmptyMatrix(inputSize, outputSize)
 	weights.SetRandom(-1.0, 1.0)
-	bias := NewEmptyMatrix(1, outputSize)
+	bias := mat.NewEmptyMatrix(1, outputSize)
 	bias.SetRandom(-1.0, 1.0)
-	prevUpdate := NewEmptyMatrix(inputSize, outputSize)
+	prevUpdate := mat.NewEmptyMatrix(inputSize, outputSize)
 	return &DenseLayer{
 		inputs:     inputs,
 		outputs:    outputs,
@@ -53,12 +55,12 @@ func (layer *DenseLayer) OutputShape() LayerShape {
 }
 
 // FeedForward computes the outputs of the layer based on the inputs, weights and bias.
-func (layer *DenseLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
+func (layer *DenseLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
 	if len(inputs) != 1 {
 		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", len(inputs))
 	}
 	layer.inputs.SetAll(inputs[0])
-	_, err := MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
+	_, err := mat.MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +74,7 @@ func (layer *DenseLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
 }
 
 // BackPropagate updates the weights and bias of the layer based on a set of deltas and a learning rate.
-func (layer *DenseLayer) BackPropagate(outputs []*Matrix, learningRate float32, momentum float32) ([]*Matrix, error) {
+func (layer *DenseLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
 	if len(outputs) != 1 {
 		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", len(outputs))
 	}
@@ -83,8 +85,8 @@ func (layer *DenseLayer) BackPropagate(outputs []*Matrix, learningRate float32, 
 		return nil, err
 	}
 	gradient.Scale(learningRate)
-	transposedInputs, _ := MatrixTranspose(layer.inputs, nil)
-	weightChange, err := MatrixMultiply(transposedInputs, gradient, nil)
+	transposedInputs, _ := mat.MatrixTranspose(layer.inputs, nil)
+	weightChange, err := mat.MatrixMultiply(transposedInputs, gradient, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -105,8 +107,8 @@ func (layer *DenseLayer) BackPropagate(outputs []*Matrix, learningRate float32, 
 	if err != nil {
 		return nil, err
 	}
-	transposedWeights, _ := MatrixTranspose(layer.Weights, nil)
-	nextDeltas, err := MatrixMultiply(deltasMatrix, transposedWeights, nil)
+	transposedWeights, _ := mat.MatrixTranspose(layer.Weights, nil)
+	nextDeltas, err := mat.MatrixMultiply(deltasMatrix, transposedWeights, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -130,8 +132,8 @@ func (layer *DenseLayer) MarshalJSON() ([]byte, error) {
 		Type:       LayerTypeDense,
 		InputSize:  layer.InputShape().Cols,
 		OutputSize: layer.OutputShape().Cols,
-		Weights:    layer.Weights.values,
-		Bias:       layer.Bias.values,
+		Weights:    layer.Weights.GetAll(),
+		Bias:       layer.Bias.GetAll(),
 		Activation: layer.Activation.Type,
 	}
 	return json.Marshal(data)
@@ -144,10 +146,10 @@ func (layer *DenseLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = NewEmptyMatrix(1, data.InputSize)
-	layer.outputs = NewEmptyMatrix(1, data.OutputSize)
-	layer.Weights = NewMatrixWithValues(data.Weights)
-	layer.Bias = NewMatrixWithValues(data.Bias)
+	layer.inputs = mat.NewEmptyMatrix(1, data.InputSize)
+	layer.outputs = mat.NewEmptyMatrix(1, data.OutputSize)
+	layer.Weights = mat.NewMatrixWithValues(data.Weights)
+	layer.Bias = mat.NewMatrixWithValues(data.Bias)
 	layer.Activation = activationFunctionOfType(data.Activation)
 	return nil
 }

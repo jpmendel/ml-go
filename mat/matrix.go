@@ -1,4 +1,4 @@
-package ml
+package mat
 
 import (
 	"fmt"
@@ -65,6 +65,11 @@ func (matrix *Matrix) Get(row int, col int) float32 {
 		log.Panicf("Row or column out of bounds: (%d, %d)", row, col)
 	}
 	return matrix.values[row][col]
+}
+
+// GetAll retrieves all values from the matrix.
+func (matrix *Matrix) GetAll() [][]float32 {
+	return matrix.values
 }
 
 // Sum gets the sum of all values in the matrix.

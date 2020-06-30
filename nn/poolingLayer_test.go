@@ -1,12 +1,16 @@
-package ml
+package nn
 
-import "testing"
+import (
+	"testing"
+
+	"../mat"
+)
 
 func TestPoolingLayer(t *testing.T) {
 	layer := NewPoolingLayer(4, 4, 1, 2, PoolingMax)
 
-	inputs := []*Matrix{
-		NewMatrixWithValues([][]float32{
+	inputs := []*mat.Matrix{
+		mat.NewMatrixWithValues([][]float32{
 			{4, 2, 6, 5},
 			{1, 3, 8, 7},
 			{6, 9, 3, 4},
@@ -14,8 +18,8 @@ func TestPoolingLayer(t *testing.T) {
 		}),
 	}
 
-	solution := []*Matrix{
-		NewMatrixWithValues([][]float32{
+	solution := []*mat.Matrix{
+		mat.NewMatrixWithValues([][]float32{
 			{4, 8},
 			{9, 5},
 		}),

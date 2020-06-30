@@ -1,9 +1,11 @@
-package ml
+package nn
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
+
+	"../mat"
 )
 
 // NeuralNetwork is a basic fully connected neural network.
@@ -77,7 +79,7 @@ func (neuralNetwork *NeuralNetwork) Train(inputs [][]float32, targets [][]float3
 	if err != nil {
 		return err
 	}
-	deltas := NewMatrixWithValues(targets)
+	deltas := mat.NewMatrixWithValues(targets)
 	err = deltas.SubtractMatrix(outputs)
 	if err != nil {
 		return err
@@ -85,8 +87,8 @@ func (neuralNetwork *NeuralNetwork) Train(inputs [][]float32, targets [][]float3
 	return neuralNetwork.backPropagate(deltas, learningRate, momentum)
 }
 
-func (neuralNetwork *NeuralNetwork) feedForward(inputs [][]float32) (*Matrix, error) {
-	nextInputs := []*Matrix{NewMatrixWithValues(inputs)}
+func (neuralNetwork *NeuralNetwork) feedForward(inputs [][]float32) (*mat.Matrix, error) {
+	nextInputs := []*mat.Matrix{mat.NewMatrixWithValues(inputs)}
 	var err error
 	for _, layer := range neuralNetwork.layers {
 		nextInputs, err = layer.FeedForward(nextInputs)
@@ -97,8 +99,8 @@ func (neuralNetwork *NeuralNetwork) feedForward(inputs [][]float32) (*Matrix, er
 	return nextInputs[0], nil
 }
 
-func (neuralNetwork *NeuralNetwork) backPropagate(deltas *Matrix, learningRate float32, momentum float32) error {
-	nextDeltas := []*Matrix{deltas}
+func (neuralNetwork *NeuralNetwork) backPropagate(deltas *mat.Matrix, learningRate float32, momentum float32) error {
+	nextDeltas := []*mat.Matrix{deltas}
 	var err error
 	for i := len(neuralNetwork.layers) - 1; i >= 0; i-- {
 		layer := neuralNetwork.layers[i]

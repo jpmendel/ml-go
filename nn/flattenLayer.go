@@ -1,21 +1,25 @@
-package ml
+package nn
 
-import "encoding/json"
+import (
+	"encoding/json"
+
+	"../mat"
+)
 
 // FlattenLayer is a layer that flattens data into length 1.
 type FlattenLayer struct {
-	inputs  []*Matrix
-	outputs *Matrix
+	inputs  []*mat.Matrix
+	outputs *mat.Matrix
 }
 
 // NewFlattenLayer creates a new instance of a flattening layer.
 func NewFlattenLayer(inputRows int, inputCols int, inputLength int) *FlattenLayer {
-	inputs := make([]*Matrix, inputLength)
+	inputs := make([]*mat.Matrix, inputLength)
 	for i := 0; i < inputLength; i++ {
-		inputs[i] = NewEmptyMatrix(inputRows, inputCols)
+		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
 	}
 	outputSize := inputRows * inputCols * inputLength
-	outputs := NewEmptyMatrix(1, outputSize)
+	outputs := mat.NewEmptyMatrix(1, outputSize)
 	return &FlattenLayer{
 		inputs:  inputs,
 		outputs: outputs,
@@ -38,7 +42,7 @@ func (layer *FlattenLayer) OutputShape() LayerShape {
 }
 
 // FeedForward flattens the data from its input length to a length of 1.
-func (layer *FlattenLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
+func (layer *FlattenLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
 	index := 0
 	for i, input := range inputs {
 		layer.inputs[i].SetAll(input)
@@ -49,11 +53,11 @@ func (layer *FlattenLayer) FeedForward(inputs []*Matrix) ([]*Matrix, error) {
 			}
 		}
 	}
-	return []*Matrix{layer.outputs}, nil
+	return []*mat.Matrix{layer.outputs}, nil
 }
 
 // BackPropagate unflattens the data to its original length.
-func (layer *FlattenLayer) BackPropagate(outputs []*Matrix, learningRate float32, momentum float32) ([]*Matrix, error) {
+func (layer *FlattenLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
 	return layer.inputs, nil
 }
 
@@ -81,11 +85,11 @@ func (layer *FlattenLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*Matrix, data.InputLength)
+	layer.inputs = make([]*mat.Matrix, data.InputLength)
 	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = NewEmptyMatrix(1, data.InputSize)
+		layer.inputs[i] = mat.NewEmptyMatrix(1, data.InputSize)
 	}
 	outputSize := data.InputSize * data.InputLength
-	layer.outputs = NewEmptyMatrix(1, outputSize)
+	layer.outputs = mat.NewEmptyMatrix(1, outputSize)
 	return nil
 }

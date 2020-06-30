@@ -1,14 +1,18 @@
-package ml
+package nn
 
-import "fmt"
+import (
+	"fmt"
+
+	"../mat"
+)
 
 // Layer is a stage of data computation in a neural network.
 type Layer interface {
 	Copy() Layer
 	InputShape() LayerShape
 	OutputShape() LayerShape
-	FeedForward(inputs []*Matrix) ([]*Matrix, error)
-	BackPropagate(outputs []*Matrix, learningRate float32, momentum float32) ([]*Matrix, error)
+	FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error)
+	BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error)
 }
 
 // LayerType represents the type of layer.

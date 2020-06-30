@@ -1,26 +1,30 @@
-package ml
+package nn
 
-import "testing"
+import (
+	"testing"
+
+	"../mat"
+)
 
 func TestFlattenLayer(t *testing.T) {
 	layer := NewFlattenLayer(2, 3, 3)
 
-	inputs := []*Matrix{
-		NewMatrixWithValues([][]float32{
+	inputs := []*mat.Matrix{
+		mat.NewMatrixWithValues([][]float32{
 			{1, 2, 3},
 			{4, 5, 6},
 		}),
-		NewMatrixWithValues([][]float32{
+		mat.NewMatrixWithValues([][]float32{
 			{7, 8, 9},
 			{10, 11, 12},
 		}),
-		NewMatrixWithValues([][]float32{
+		mat.NewMatrixWithValues([][]float32{
 			{13, 14, 15},
 			{16, 17, 18},
 		}),
 	}
 
-	solution := NewMatrixWithValues([][]float32{
+	solution := mat.NewMatrixWithValues([][]float32{
 		{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},
 	})
 
