@@ -70,6 +70,7 @@ func (layer *ConvolutionLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix,
 				}
 			}
 		}
+		layer.Activation.Function(layer.outputs[i])
 	}
 	return layer.outputs, nil
 }
@@ -83,9 +84,12 @@ func (layer *ConvolutionLayer) convolution(matrix *mat.Matrix, row int, col int,
 	sum := float32(0.0)
 	for or := -filter.Rows / 2; or <= filter.Rows/2; or++ {
 		convRow := row + or
+		if convRow < 0 || convRow >= matrix.Rows {
+			continue
+		}
 		for oc := -filter.Cols / 2; oc <= filter.Cols/2; oc++ {
-			convCol := row + oc
-			if convRow < 0 || convRow >= matrix.Rows || convCol < 0 || convCol >= matrix.Cols {
+			convCol := col + oc
+			if convCol < 0 || convCol >= matrix.Cols {
 				continue
 			}
 			sum += matrix.Get(convRow, convCol) * filter.Get(or+filter.Rows/2, oc+filter.Cols/2)

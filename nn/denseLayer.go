@@ -72,7 +72,7 @@ func (layer *DenseLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error
 	if err != nil {
 		return nil, err
 	}
-	layer.outputs = layer.Activation.Function(layer.outputs)
+	layer.Activation.Function(layer.outputs)
 	inputs[0] = layer.outputs
 	return inputs, nil
 }
