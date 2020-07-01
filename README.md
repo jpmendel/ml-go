@@ -1,7 +1,7 @@
 # ml-go
-A simple machine learning library for Go, featuring neural networks.
+A simple machine learning library for Go.
 
-## Installation
+## Setup
 
 Use `go get` to retreive the package.
 ```
