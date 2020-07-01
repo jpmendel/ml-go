@@ -45,7 +45,7 @@ prediction, _ := neuralNetwork.Predict(myTestData)
 
 ```go
 import (
-    "github.com/jpmendel/ml-go/mat"
+    "github.com/jpmendel/ml-go/tensor"
     "github.com/jpmendel/ml-go/nn"
 )
 
@@ -53,7 +53,7 @@ import (
 neuralNetwork := nn.NewNeuralNetwork()
 
 // ConvolutionLayer applies various operations to the input data.
-convolutionLayer := nn.NewConvolutionLayer(16, 16, 1, []*mat.Matrix{nn.FilterVerticalEdges, nn.FilterHorizontalEdges}, nn.ActivationRELU)
+convolutionLayer := nn.NewConvolutionLayer(16, 16, 1, []*tensor.Tensor{nn.FilterVerticalEdges, nn.FilterHorizontalEdges}, nn.ActivationRELU)
 
 // PoolingLayer subsamples data down to a smaller size.
 poolingLayer := nn.NewPoolingLayer(16, 16, 2, 2, nn.PoolingMax)

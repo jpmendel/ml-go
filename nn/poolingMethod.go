@@ -1,11 +1,11 @@
 package nn
 
-import "../mat"
+import tsr "../tensor"
 
 // PoolingFunction represents a function used to find a pooled value.
 type PoolingFunction struct {
 	Method          PoolingMethod
-	FindPooledValue func(*mat.Matrix, int, int, int) float32
+	FindPooledValue func(*tsr.Tensor, int, int, int, int) float32
 }
 
 // PoolingMethod is the identifying type of the pooling function.
@@ -22,14 +22,14 @@ const (
 // PoolingMax finds the maximum value in the pool.
 var PoolingMax = PoolingFunction{
 	Method: PoolingMethodMax,
-	FindPooledValue: func(matrix *mat.Matrix, row int, col int, poolSize int) float32 {
-		max := matrix.Get(row, col)
+	FindPooledValue: func(matrix *tsr.Tensor, frame int, row int, col int, poolSize int) float32 {
+		max := matrix.Get(frame, row, col)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {
 				if or == 0 && oc == 0 {
 					continue
 				}
-				value := matrix.Get(row+or, col+oc)
+				value := matrix.Get(frame, row+or, col+oc)
 				if value > max {
 					max = value
 				}
@@ -42,11 +42,11 @@ var PoolingMax = PoolingFunction{
 // PoolingAvg finds the average value of the pool.
 var PoolingAvg = PoolingFunction{
 	Method: PoolingMethodAvg,
-	FindPooledValue: func(matrix *mat.Matrix, poolSize int, row int, col int) float32 {
+	FindPooledValue: func(matrix *tsr.Tensor, frame int, row int, col int, poolSize int) float32 {
 		total := float32(0.0)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {
-				total += matrix.Get(row+or, col+oc)
+				total += matrix.Get(frame, row+or, col+oc)
 			}
 		}
 		return total / float32(poolSize*poolSize)

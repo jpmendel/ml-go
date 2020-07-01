@@ -1,16 +1,16 @@
 package nn
 
-import "../mat"
+import tsr "../tensor"
 
 // FilterVerticalEdges emphasizes vertical edges in data.
-var FilterVerticalEdges = mat.NewMatrixWithValues([][]float32{
+var FilterVerticalEdges = tsr.NewValueTensor2D([][]float32{
 	{-1, 0, 1},
 	{-1, 0, 1},
 	{-1, 0, 1},
 })
 
 // FilterHorizontalEdges emphasizes horizontal edges in data.
-var FilterHorizontalEdges = mat.NewMatrixWithValues([][]float32{
+var FilterHorizontalEdges = tsr.NewValueTensor2D([][]float32{
 	{-1, -1, -1},
 	{0, 0, 0},
 	{1, 1, 1},

@@ -3,33 +3,27 @@ package nn
 import (
 	"encoding/json"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // ConvolutionLayer is a layer that performs convolutional filters on data.
 type ConvolutionLayer struct {
 	inputShape  LayerShape
 	outputShape LayerShape
-	inputs      []*mat.Matrix
-	outputs     []*mat.Matrix
-	Filters     []*mat.Matrix
+	inputs      *tsr.Tensor
+	outputs     *tsr.Tensor
+	Filters     []*tsr.Tensor
 	Activation  ActivationFunction
 }
 
 // NewConvolutionLayer creates a new instance of a convolutional layer.
-func NewConvolutionLayer(inputRows int, inputCols int, inputLength int, filters []*mat.Matrix, activation ActivationFunction) *ConvolutionLayer {
-	inputs := make([]*mat.Matrix, inputLength)
-	for i := 0; i < inputLength; i++ {
-		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
-	}
-	outputLength := inputLength * len(filters)
-	outputs := make([]*mat.Matrix, outputLength)
-	for i := 0; i < outputLength; i++ {
-		outputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
-	}
+func NewConvolutionLayer(inputRows int, inputCols int, inputFrames int, filters []*tsr.Tensor, activation ActivationFunction) *ConvolutionLayer {
+	inputs := tsr.NewEmptyTensor3D(inputFrames, inputRows, inputCols)
+	outputFrames := inputFrames * len(filters)
+	outputs := tsr.NewEmptyTensor3D(outputFrames, inputRows, inputCols)
 	return &ConvolutionLayer{
-		inputShape:  LayerShape{inputRows, inputCols, inputLength},
-		outputShape: LayerShape{inputRows, inputCols, outputLength},
+		inputShape:  LayerShape{inputRows, inputCols, inputFrames},
+		outputShape: LayerShape{inputRows, inputCols, outputFrames},
 		inputs:      inputs,
 		outputs:     outputs,
 		Filters:     filters,
@@ -59,28 +53,28 @@ func (layer *ConvolutionLayer) OutputShape() LayerShape {
 }
 
 // FeedForward applies convolutions to the input for each of the filters.
-func (layer *ConvolutionLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
-	for i, input := range inputs {
-		layer.inputs[i].SetAll(input)
-		for _, filter := range layer.Filters {
-			for row := 0; row < input.Rows; row++ {
-				for col := 0; col < input.Cols; col++ {
-					value := layer.convolution(input, row, col, filter)
-					layer.outputs[i].Set(row, col, value)
+func (layer *ConvolutionLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
+	layer.inputs.SetAll(inputs)
+	for _, filter := range layer.Filters {
+		for frame := 0; frame < inputs.Frames; frame++ {
+			for row := 0; row < inputs.Rows; row++ {
+				for col := 0; col < inputs.Cols; col++ {
+					value := layer.convolution(inputs, frame, row, col, filter)
+					layer.outputs.Set(frame, row, col, value)
 				}
 			}
 		}
-		layer.Activation.Function(layer.outputs[i])
 	}
+	layer.Activation.Function(layer.outputs)
 	return layer.outputs, nil
 }
 
 // BackPropagate does not operate on the data in a convolution layer.
-func (layer *ConvolutionLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
+func (layer *ConvolutionLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error) {
 	return layer.inputs, nil
 }
 
-func (layer *ConvolutionLayer) convolution(matrix *mat.Matrix, row int, col int, filter *mat.Matrix) float32 {
+func (layer *ConvolutionLayer) convolution(matrix *tsr.Tensor, frame int, row int, col int, filter *tsr.Tensor) float32 {
 	sum := float32(0.0)
 	for or := -filter.Rows / 2; or <= filter.Rows/2; or++ {
 		convRow := row + or
@@ -92,7 +86,7 @@ func (layer *ConvolutionLayer) convolution(matrix *mat.Matrix, row int, col int,
 			if convCol < 0 || convCol >= matrix.Cols {
 				continue
 			}
-			sum += matrix.Get(convRow, convCol) * filter.Get(or+filter.Rows/2, oc+filter.Cols/2)
+			sum += matrix.Get(frame, convRow, convCol) * filter.Get(0, or+filter.Rows/2, oc+filter.Cols/2)
 		}
 	}
 	return sum
@@ -103,7 +97,7 @@ type ConvolutionLayerData struct {
 	Type        LayerType      `json:"type"`
 	InputRows   int            `json:"inputRows"`
 	InputCols   int            `json:"inputCols"`
-	InputLength int            `json:"inputLength"`
+	InputFrames int            `json:"inputFrames"`
 	Filters     [][][]float32  `json:"filters"`
 	Activation  ActivationType `json:"activation"`
 }
@@ -112,13 +106,13 @@ type ConvolutionLayerData struct {
 func (layer *ConvolutionLayer) MarshalJSON() ([]byte, error) {
 	filters := make([][][]float32, len(layer.Filters))
 	for i, filter := range layer.Filters {
-		filters[i] = filter.GetAll()
+		filters[i] = filter.GetFrame(0)
 	}
 	data := ConvolutionLayerData{
 		Type:        LayerTypeConvolution,
 		InputRows:   layer.InputShape().Rows,
 		InputCols:   layer.InputShape().Cols,
-		InputLength: layer.InputShape().Length,
+		InputFrames: layer.InputShape().Length,
 		Filters:     filters,
 		Activation:  layer.Activation.Type,
 	}
@@ -132,21 +126,15 @@ func (layer *ConvolutionLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*mat.Matrix, data.InputLength)
-	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
-	}
-	outputLength := data.InputLength * len(data.Filters)
-	layer.outputs = make([]*mat.Matrix, outputLength)
-	for i := 0; i < outputLength; i++ {
-		layer.outputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
-	}
-	layer.Filters = make([]*mat.Matrix, len(data.Filters))
+	layer.inputs = tsr.NewEmptyTensor3D(data.InputFrames, data.InputRows, data.InputCols)
+	outputFrames := data.InputFrames * len(data.Filters)
+	layer.outputs = tsr.NewEmptyTensor3D(data.InputFrames, data.InputRows, data.InputCols)
+	layer.Filters = make([]*tsr.Tensor, len(data.Filters))
 	for i, filter := range data.Filters {
-		layer.Filters[i] = mat.NewMatrixWithValues(filter)
+		layer.Filters[i] = tsr.NewValueTensor2D(filter)
 	}
 	layer.Activation = activationFunctionOfType(data.Activation)
-	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputLength}
-	layer.outputShape = LayerShape{data.InputRows, data.InputCols, outputLength}
+	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputFrames}
+	layer.outputShape = LayerShape{data.InputRows, data.InputCols, outputFrames}
 	return nil
 }

@@ -6,7 +6,7 @@ import (
 	"testing"
 	"time"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 type TrainingData struct {
@@ -123,7 +123,7 @@ func TestNeuralNetworkXOR(t *testing.T) {
 
 func TestNeuralNetworkSaveLoad(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
-	conv := NewConvolutionLayer(16, 16, 1, []*mat.Matrix{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU)
+	conv := NewConvolutionLayer(16, 16, 1, []*tsr.Tensor{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU)
 	pool := NewPoolingLayer(conv.OutputShape().Rows, conv.OutputShape().Cols, conv.OutputShape().Length, 2, PoolingMax)
 	flat := NewFlattenLayer(pool.OutputShape().Rows, pool.OutputShape().Cols, pool.OutputShape().Length)
 	dense1 := NewDenseLayer(flat.OutputShape().Cols, 16, ActivationRELU)

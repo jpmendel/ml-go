@@ -3,14 +3,14 @@ package nn
 import (
 	"math"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // ActivationFunction represents a function used to activate neural network outputs.
 type ActivationFunction struct {
 	Type       ActivationType
-	Function   func(*mat.Matrix) *mat.Matrix
-	Derivative func(*mat.Matrix) *mat.Matrix
+	Function   func(*tsr.Tensor) *tsr.Tensor
+	Derivative func(*tsr.Tensor) *tsr.Tensor
 }
 
 // ActivationType is the identifying type of the activation function.
@@ -33,8 +33,8 @@ const (
 // ActivationRELU is the rectified linear unit activation function.
 var ActivationRELU = ActivationFunction{
 	Type: ActivationTypeRELU,
-	Function: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Function: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			if current > 0 {
 				return current
 			}
@@ -42,8 +42,8 @@ var ActivationRELU = ActivationFunction{
 		})
 		return matrix
 	},
-	Derivative: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Derivative: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			if current > 0 {
 				return 1
 			}
@@ -56,14 +56,14 @@ var ActivationRELU = ActivationFunction{
 // ActivationSigmoid is the sigmoid activation function.
 var ActivationSigmoid = ActivationFunction{
 	Type: ActivationTypeSigmoid,
-	Function: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Function: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return 1 / (1 + float32(math.Exp(-float64(current))))
 		})
 		return matrix
 	},
-	Derivative: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Derivative: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return current * (1 - current)
 		})
 		return matrix
@@ -73,14 +73,14 @@ var ActivationSigmoid = ActivationFunction{
 // ActivationTanh is the hyperbolic tangent activation function.
 var ActivationTanh = ActivationFunction{
 	Type: ActivationTypeTanh,
-	Function: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Function: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return float32(math.Tanh(float64(current)))
 		})
 		return matrix
 	},
-	Derivative: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Derivative: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return 1 - float32(math.Pow(float64(current), 2))
 		})
 		return matrix
@@ -90,26 +90,28 @@ var ActivationTanh = ActivationFunction{
 // ActivationSoftmax is the softmax activation function.
 var ActivationSoftmax = ActivationFunction{
 	Type: ActivationTypeSoftmax,
-	Function: func(matrix *mat.Matrix) *mat.Matrix {
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+	Function: func(matrix *tsr.Tensor) *tsr.Tensor {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return float32(math.Exp(float64(current)))
 		})
 		sum := matrix.Sum()
-		matrix.ApplyFunction(func(current float32, row int, col int) float32 {
+		matrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			return current / sum
 		})
 		return matrix
 	},
-	Derivative: func(matrix *mat.Matrix) *mat.Matrix {
+	Derivative: func(matrix *tsr.Tensor) *tsr.Tensor {
 		newMatrix := matrix.Copy()
-		newMatrix.ApplyFunction(func(current float32, row int, col int) float32 {
+		newMatrix.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 			sum := float32(0.0)
-			for r := 0; r < matrix.Rows; r++ {
-				for c := 0; c < matrix.Cols; c++ {
-					if col == c {
-						sum += matrix.Get(r, c) * (1 - current)
+			for f := 0; f < matrix.Frames; f++ {
+				for r := 0; r < matrix.Rows; r++ {
+					for c := 0; c < matrix.Cols; c++ {
+						if col == c {
+							sum += matrix.Get(f, r, c) * (1 - current)
+						}
+						sum += matrix.Get(f, r, c) * -current
 					}
-					sum += matrix.Get(r, c) * -current
 				}
 			}
 			return sum

@@ -4,30 +4,30 @@ import (
 	"encoding/json"
 	"fmt"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // DenseLayer is a fully connected layer for a neural network.
 type DenseLayer struct {
 	inputShape  LayerShape
 	outputShape LayerShape
-	inputs      *mat.Matrix
-	outputs     *mat.Matrix
-	Weights     *mat.Matrix
-	Bias        *mat.Matrix
-	PrevUpdate  *mat.Matrix
+	inputs      *tsr.Tensor
+	outputs     *tsr.Tensor
+	Weights     *tsr.Tensor
+	Bias        *tsr.Tensor
+	PrevUpdate  *tsr.Tensor
 	Activation  ActivationFunction
 }
 
 // NewDenseLayer creates a new instance of a fully connected layer.
 func NewDenseLayer(inputSize int, outputSize int, activation ActivationFunction) *DenseLayer {
-	inputs := mat.NewEmptyMatrix(1, inputSize)
-	outputs := mat.NewEmptyMatrix(1, outputSize)
-	weights := mat.NewEmptyMatrix(inputSize, outputSize)
+	inputs := tsr.NewEmptyTensor1D(inputSize)
+	outputs := tsr.NewEmptyTensor1D(outputSize)
+	weights := tsr.NewEmptyTensor2D(inputSize, outputSize)
 	weights.SetRandom(-1.0, 1.0)
-	bias := mat.NewEmptyMatrix(1, outputSize)
+	bias := tsr.NewEmptyTensor1D(outputSize)
 	bias.SetRandom(-1.0, 1.0)
-	prevUpdate := mat.NewEmptyMatrix(inputSize, outputSize)
+	prevUpdate := tsr.NewEmptyTensor2D(inputSize, outputSize)
 	return &DenseLayer{
 		inputShape:  LayerShape{1, inputSize, 1},
 		outputShape: LayerShape{1, outputSize, 1},
@@ -59,47 +59,45 @@ func (layer *DenseLayer) OutputShape() LayerShape {
 }
 
 // FeedForward computes the outputs of the layer based on the inputs, weights and bias.
-func (layer *DenseLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
-	if len(inputs) != 1 {
-		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", len(inputs))
+func (layer *DenseLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
+	if inputs.Frames != 1 {
+		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", inputs.Frames)
 	}
-	layer.inputs.SetAll(inputs[0])
-	_, err := mat.MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
+	layer.inputs.SetAll(inputs)
+	_, err := tsr.MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
 	if err != nil {
 		return nil, err
 	}
-	err = layer.outputs.AddMatrix(layer.Bias)
+	err = layer.outputs.AddTensor(layer.Bias)
 	if err != nil {
 		return nil, err
 	}
 	layer.Activation.Function(layer.outputs)
-	inputs[0] = layer.outputs
-	return inputs, nil
+	return layer.outputs, nil
 }
 
 // BackPropagate updates the weights and bias of the layer based on a set of deltas and a learning rate.
-func (layer *DenseLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
-	if len(outputs) != 1 {
-		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", len(outputs))
+func (layer *DenseLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error) {
+	if outputs.Frames != 1 {
+		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", outputs.Frames)
 	}
-	deltasMatrix := outputs[0]
 	gradient := layer.Activation.Derivative(layer.outputs.Copy())
-	err := gradient.ScaleMatrix(deltasMatrix)
+	err := gradient.ScaleTensor(outputs)
 	if err != nil {
 		return nil, err
 	}
 	gradient.Scale(learningRate)
-	transposedInputs, _ := mat.MatrixTranspose(layer.inputs, nil)
-	weightChange, err := mat.MatrixMultiply(transposedInputs, gradient, nil)
+	transposedInputs, _ := tsr.MatrixTranspose(layer.inputs, nil)
+	weightChange, err := tsr.MatrixMultiply(transposedInputs, gradient, nil)
 	if err != nil {
 		return nil, err
 	}
-	err = layer.Weights.AddMatrix(weightChange)
+	err = layer.Weights.AddTensor(weightChange)
 	if err != nil {
 		return nil, err
 	}
 	layer.PrevUpdate.Scale(momentum)
-	err = layer.Weights.AddMatrix(layer.PrevUpdate)
+	err = layer.Weights.AddTensor(layer.PrevUpdate)
 	if err != nil {
 		return nil, err
 	}
@@ -107,17 +105,16 @@ func (layer *DenseLayer) BackPropagate(outputs []*mat.Matrix, learningRate float
 	if err != nil {
 		return nil, err
 	}
-	err = layer.Bias.AddMatrix(gradient)
+	err = layer.Bias.AddTensor(gradient)
 	if err != nil {
 		return nil, err
 	}
-	transposedWeights, _ := mat.MatrixTranspose(layer.Weights, nil)
-	nextDeltas, err := mat.MatrixMultiply(deltasMatrix, transposedWeights, nil)
+	transposedWeights, _ := tsr.MatrixTranspose(layer.Weights, nil)
+	nextDeltas, err := tsr.MatrixMultiply(outputs, transposedWeights, nil)
 	if err != nil {
 		return nil, err
 	}
-	outputs[0] = nextDeltas
-	return outputs, nil
+	return nextDeltas, nil
 }
 
 // DenseLayerData represents a serialized layer that can be saved to a file.
@@ -126,7 +123,7 @@ type DenseLayerData struct {
 	InputSize  int            `json:"inputSize"`
 	OutputSize int            `json:"outputSize"`
 	Weights    [][]float32    `json:"weights"`
-	Bias       [][]float32    `json:"bias"`
+	Bias       []float32      `json:"bias"`
 	Activation ActivationType `json:"activation"`
 }
 
@@ -136,8 +133,8 @@ func (layer *DenseLayer) MarshalJSON() ([]byte, error) {
 		Type:       LayerTypeDense,
 		InputSize:  layer.InputShape().Cols,
 		OutputSize: layer.OutputShape().Cols,
-		Weights:    layer.Weights.GetAll(),
-		Bias:       layer.Bias.GetAll(),
+		Weights:    layer.Weights.GetFrame(0),
+		Bias:       layer.Bias.GetFrame(0)[0],
 		Activation: layer.Activation.Type,
 	}
 	return json.Marshal(data)
@@ -150,10 +147,10 @@ func (layer *DenseLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = mat.NewEmptyMatrix(1, data.InputSize)
-	layer.outputs = mat.NewEmptyMatrix(1, data.OutputSize)
-	layer.Weights = mat.NewMatrixWithValues(data.Weights)
-	layer.Bias = mat.NewMatrixWithValues(data.Bias)
+	layer.inputs = tsr.NewEmptyTensor1D(data.InputSize)
+	layer.outputs = tsr.NewEmptyTensor1D(data.OutputSize)
+	layer.Weights = tsr.NewValueTensor2D(data.Weights)
+	layer.Bias = tsr.NewValueTensor1D(data.Bias)
 	layer.Activation = activationFunctionOfType(data.Activation)
 	layer.inputShape = LayerShape{1, data.InputSize, 1}
 	layer.outputShape = LayerShape{1, data.OutputSize, 1}

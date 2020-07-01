@@ -3,7 +3,7 @@ package nn
 import (
 	"fmt"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // Layer is a stage of data computation in a neural network.
@@ -11,8 +11,8 @@ type Layer interface {
 	Copy() Layer
 	InputShape() LayerShape
 	OutputShape() LayerShape
-	FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error)
-	BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error)
+	FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error)
+	BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error)
 }
 
 // LayerType represents the type of layer.

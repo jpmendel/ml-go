@@ -3,27 +3,24 @@ package nn
 import (
 	"encoding/json"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // FlattenLayer is a layer that flattens data into length 1.
 type FlattenLayer struct {
 	inputShape  LayerShape
 	outputShape LayerShape
-	inputs      []*mat.Matrix
-	outputs     *mat.Matrix
+	inputs      *tsr.Tensor
+	outputs     *tsr.Tensor
 }
 
 // NewFlattenLayer creates a new instance of a flattening layer.
-func NewFlattenLayer(inputRows int, inputCols int, inputLength int) *FlattenLayer {
-	inputs := make([]*mat.Matrix, inputLength)
-	for i := 0; i < inputLength; i++ {
-		inputs[i] = mat.NewEmptyMatrix(inputRows, inputCols)
-	}
-	outputSize := inputRows * inputCols * inputLength
-	outputs := mat.NewEmptyMatrix(1, outputSize)
+func NewFlattenLayer(inputRows int, inputCols int, inputFrames int) *FlattenLayer {
+	inputs := tsr.NewEmptyTensor3D(inputFrames, inputRows, inputCols)
+	outputSize := inputRows * inputCols * inputFrames
+	outputs := tsr.NewEmptyTensor1D(outputSize)
 	return &FlattenLayer{
-		inputShape:  LayerShape{inputRows, inputCols, inputLength},
+		inputShape:  LayerShape{inputRows, inputCols, inputFrames},
 		outputShape: LayerShape{1, outputSize, 1},
 		inputs:      inputs,
 		outputs:     outputs,
@@ -46,22 +43,22 @@ func (layer *FlattenLayer) OutputShape() LayerShape {
 }
 
 // FeedForward flattens the data from its input length to a length of 1.
-func (layer *FlattenLayer) FeedForward(inputs []*mat.Matrix) ([]*mat.Matrix, error) {
+func (layer *FlattenLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 	flattenedIndex := 0
-	for i, input := range inputs {
-		layer.inputs[i].SetAll(input)
-		for row := 0; row < input.Rows; row++ {
-			for col := 0; col < input.Cols; col++ {
-				layer.outputs.Set(0, flattenedIndex, input.Get(row, col))
+	layer.inputs.SetAll(inputs)
+	for frame := 0; frame < inputs.Frames; frame++ {
+		for row := 0; row < inputs.Rows; row++ {
+			for col := 0; col < inputs.Cols; col++ {
+				layer.outputs.Set(0, 0, flattenedIndex, inputs.Get(frame, row, col))
 				flattenedIndex++
 			}
 		}
 	}
-	return []*mat.Matrix{layer.outputs}, nil
+	return layer.outputs, nil
 }
 
 // BackPropagate unflattens the data to its original length.
-func (layer *FlattenLayer) BackPropagate(outputs []*mat.Matrix, learningRate float32, momentum float32) ([]*mat.Matrix, error) {
+func (layer *FlattenLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error) {
 	return layer.inputs, nil
 }
 
@@ -70,7 +67,7 @@ type FlattenLayerData struct {
 	Type        LayerType `json:"type"`
 	InputRows   int       `json:"inputRows"`
 	InputCols   int       `json:"inputCols"`
-	InputLength int       `json:"inputLength"`
+	InputFrames int       `json:"inputFrames"`
 }
 
 // MarshalJSON converts the layer to JSON.
@@ -79,7 +76,7 @@ func (layer *FlattenLayer) MarshalJSON() ([]byte, error) {
 		Type:        LayerTypeFlatten,
 		InputRows:   layer.InputShape().Rows,
 		InputCols:   layer.InputShape().Cols,
-		InputLength: layer.InputShape().Length,
+		InputFrames: layer.InputShape().Length,
 	}
 	return json.Marshal(data)
 }
@@ -91,13 +88,10 @@ func (layer *FlattenLayer) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	layer.inputs = make([]*mat.Matrix, data.InputLength)
-	for i := 0; i < data.InputLength; i++ {
-		layer.inputs[i] = mat.NewEmptyMatrix(data.InputRows, data.InputCols)
-	}
-	outputSize := data.InputRows * data.InputCols * data.InputLength
-	layer.outputs = mat.NewEmptyMatrix(1, outputSize)
-	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputLength}
+	layer.inputs = tsr.NewEmptyTensor3D(data.InputFrames, data.InputRows, data.InputCols)
+	outputSize := data.InputRows * data.InputCols * data.InputFrames
+	layer.outputs = tsr.NewEmptyTensor1D(outputSize)
+	layer.inputShape = LayerShape{data.InputRows, data.InputCols, data.InputFrames}
 	layer.outputShape = LayerShape{1, outputSize, 1}
 	return nil
 }

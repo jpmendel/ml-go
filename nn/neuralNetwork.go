@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 // NeuralNetwork is a basic fully connected neural network.
@@ -64,13 +64,13 @@ func (neuralNetwork *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32
 	if err != nil {
 		return nil, err
 	}
-	outputArray := make([][][]float32, len(outputs))
-	for i, output := range outputs {
-		outputArray[i] = make([][]float32, output.Rows)
-		for row := 0; row < output.Rows; row++ {
-			outputArray[i][row] = make([]float32, output.Cols)
-			for col := 0; col < output.Cols; col++ {
-				outputArray[i][row][col] = output.Get(row, col)
+	outputArray := make([][][]float32, outputs.Frames)
+	for frame := 0; frame < outputs.Frames; frame++ {
+		outputArray[frame] = make([][]float32, outputs.Rows)
+		for row := 0; row < outputs.Rows; row++ {
+			outputArray[frame][row] = make([]float32, outputs.Cols)
+			for col := 0; col < outputs.Cols; col++ {
+				outputArray[frame][row][col] = outputs.Get(frame, row, col)
 			}
 		}
 	}
@@ -84,22 +84,16 @@ func (neuralNetwork *NeuralNetwork) Train(inputs [][][]float32, targets [][][]fl
 	if err != nil {
 		return err
 	}
-	deltas := make([]*mat.Matrix, len(targets))
-	for i, target := range targets {
-		deltas[i] = mat.NewMatrixWithValues(target)
-		err = deltas[i].SubtractMatrix(outputs[i])
-		if err != nil {
-			return err
-		}
+	deltas := tsr.NewValueTensor3D(targets)
+	err = deltas.SubtractTensor(outputs)
+	if err != nil {
+		return err
 	}
 	return neuralNetwork.backPropagate(deltas, learningRate, momentum)
 }
 
-func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) ([]*mat.Matrix, error) {
-	nextInputs := make([]*mat.Matrix, len(inputs))
-	for i, input := range inputs {
-		nextInputs[i] = mat.NewMatrixWithValues(input)
-	}
+func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) (*tsr.Tensor, error) {
+	nextInputs := tsr.NewValueTensor3D(inputs)
 	var err error
 	for _, layer := range neuralNetwork.layers {
 		nextInputs, err = layer.FeedForward(nextInputs)
@@ -110,7 +104,7 @@ func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) ([]*mat.Ma
 	return nextInputs, nil
 }
 
-func (neuralNetwork *NeuralNetwork) backPropagate(deltas []*mat.Matrix, learningRate float32, momentum float32) error {
+func (neuralNetwork *NeuralNetwork) backPropagate(deltas *tsr.Tensor, learningRate float32, momentum float32) error {
 	nextDeltas := deltas
 	var err error
 	for i := len(neuralNetwork.layers) - 1; i >= 0; i-- {

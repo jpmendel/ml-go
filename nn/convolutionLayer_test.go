@@ -3,23 +3,22 @@ package nn
 import (
 	"testing"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 func TestConvolutionLayer(t *testing.T) {
-	layer := NewConvolutionLayer(5, 5, 1, []*mat.Matrix{FilterVerticalEdges}, ActivationRELU)
+	filters := []*tsr.Tensor{FilterVerticalEdges}
+	layer := NewConvolutionLayer(5, 5, 1, filters, ActivationRELU)
 
-	inputs := []*mat.Matrix{
-		mat.NewMatrixWithValues([][]float32{
-			{0, 1, 0.5, 1, 0},
-			{0.5, 1, 0.5, 1, 0.5},
-			{0, 0.5, 0.5, 0.5, 0},
-			{0.5, 1, 1, 1, 0.5},
-			{0, 0, 0.5, 0, 0},
-		}),
-	}
+	inputs := tsr.NewValueTensor2D([][]float32{
+		{0, 1, 0.5, 1, 0},
+		{0.5, 1, 0.5, 1, 0.5},
+		{0, 0.5, 0.5, 0.5, 0},
+		{0.5, 1, 1, 1, 0.5},
+		{0, 0, 0.5, 0, 0},
+	})
 
-	solution := mat.NewMatrixWithValues([][]float32{
+	solution := tsr.NewValueTensor2D([][]float32{
 		{2, 0.5, 0, 0, 0},
 		{2.5, 1, 0, 0, 0},
 		{2.5, 1, 0, 0, 0},
@@ -31,23 +30,23 @@ func TestConvolutionLayer(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in FeedForward: %s", err.Error())
 	}
-	if len(convolutions) != 1 {
-		t.Fatalf("Convolution outputs have incorrect length: %d != %d", len(convolutions), 1)
+	if convolutions.Frames != inputs.Frames*len(filters) {
+		t.Fatalf("Convolution outputs have incorrect length: %d != %d", convolutions.Frames, inputs.Frames*len(filters))
 	}
 
-	if !convolutions[0].Equals(solution) {
-		t.Errorf("Matrix after feed forward should be:\n%swhen result is:\n%s", solution.String(), convolutions[0].String())
+	if !convolutions.Equals(solution) {
+		t.Errorf("Matrix after feed forward should be:\n%swhen result is:\n%s", solution.String(), convolutions.String())
 	}
 
 	deconvolutions, err := layer.BackPropagate(convolutions, 0.0, 0.0)
 	if err != nil {
 		t.Fatalf("Error in BackPropagate: %s", err.Error())
 	}
-	if len(deconvolutions) != 1 {
-		t.Fatalf("Convolution inputs have incorrect length: %d != %d", len(convolutions), 1)
+	if deconvolutions.Frames != inputs.Frames {
+		t.Fatalf("Convolution inputs have incorrect length: %d != %d", deconvolutions.Frames, inputs.Frames)
 	}
 
-	if !deconvolutions[0].Equals(inputs[0]) {
-		t.Errorf("Matrix after back propagate should be:\n%swhen result is:\n%s", inputs[0].String(), deconvolutions[0].String())
+	if !deconvolutions.Equals(inputs) {
+		t.Errorf("Matrix after back propagate should be:\n%swhen result is:\n%s", inputs.String(), deconvolutions.String())
 	}
 }

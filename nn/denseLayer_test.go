@@ -3,7 +3,7 @@ package nn
 import (
 	"testing"
 
-	"../mat"
+	tsr "../tensor"
 )
 
 func TestDenseLayer(t *testing.T) {
@@ -12,31 +12,23 @@ func TestDenseLayer(t *testing.T) {
 	originalOutputs := layer.outputs.Copy()
 	originalWeights := layer.Weights.Copy()
 
-	inputs := []*mat.Matrix{
-		mat.NewMatrixWithValues([][]float32{
-			{3, 4, 5},
-		}),
-	}
+	inputs := tsr.NewValueTensor1D([]float32{3, 4, 5})
 
-	targets := []*mat.Matrix{
-		mat.NewMatrixWithValues([][]float32{
-			{1, 2},
-		}),
-	}
+	targets := tsr.NewValueTensor1D([]float32{1, 2})
 
 	outputs, err := layer.FeedForward(inputs)
 	if err != nil {
 		t.Fatalf("Error in FeedForward: %s", err.Error())
 	}
-	if len(outputs) != 1 {
-		t.Fatalf("Outputs have incorrect length: %d != %d", len(outputs), 1)
+	if outputs.Frames != 1 {
+		t.Fatalf("Outputs have incorrect length: %d != %d", outputs.Frames, 1)
 	}
 
-	if outputs[0].Equals(originalOutputs) {
-		t.Errorf("Matrix after feed forward should have changed from:\n%swhen result is:\n%s", originalOutputs.String(), outputs[0].String())
+	if outputs.Equals(originalOutputs) {
+		t.Errorf("Matrix after feed forward should have changed from:\n%swhen result is:\n%s", originalOutputs.String(), outputs.String())
 	}
 
-	targets[0].SubtractMatrix(outputs[0])
+	targets.SubtractTensor(outputs)
 
 	_, err = layer.BackPropagate(targets, 0.5, 0.0)
 	if err != nil {
