@@ -45,7 +45,7 @@ func (layer *FlattenLayer) OutputShape() LayerShape {
 // FeedForward flattens the data from its input shape to a shape of 1 row and 1 frame.
 func (layer *FlattenLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 	flattenedIndex := 0
-	layer.inputs.SetAll(inputs)
+	layer.inputs.SetTensor(inputs)
 	for frame := 0; frame < inputs.Frames; frame++ {
 		for row := 0; row < inputs.Rows; row++ {
 			for col := 0; col < inputs.Cols; col++ {

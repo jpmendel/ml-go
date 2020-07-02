@@ -43,8 +43,8 @@ func NewDenseLayer(inputSize int, outputSize int, activation ActivationFunction)
 // Copy creates a deep copy of the layer.
 func (layer *DenseLayer) Copy() Layer {
 	newLayer := NewDenseLayer(layer.InputShape().Cols, layer.OutputShape().Cols, layer.Activation)
-	newLayer.Weights.SetAll(layer.Weights)
-	newLayer.Bias.SetAll(layer.Bias)
+	newLayer.Weights.SetTensor(layer.Weights)
+	newLayer.Bias.SetTensor(layer.Bias)
 	return newLayer
 }
 
@@ -63,7 +63,7 @@ func (layer *DenseLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 	if inputs.Frames != 1 {
 		return nil, fmt.Errorf("Input shape must have frame length of 1, is: %d", inputs.Frames)
 	}
-	layer.inputs.SetAll(inputs)
+	layer.inputs.SetTensor(inputs)
 	_, err := tsr.MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
 	if err != nil {
 		return nil, err
@@ -101,7 +101,7 @@ func (layer *DenseLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32
 	if err != nil {
 		return nil, err
 	}
-	err = layer.PrevUpdate.SetAll(weightChange)
+	err = layer.PrevUpdate.SetTensor(weightChange)
 	if err != nil {
 		return nil, err
 	}

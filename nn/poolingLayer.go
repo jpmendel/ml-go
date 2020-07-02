@@ -49,7 +49,7 @@ func (layer *PoolingLayer) OutputShape() LayerShape {
 
 // FeedForward reduces the input data by the pool size.
 func (layer *PoolingLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
-	layer.inputs.SetAll(inputs)
+	layer.inputs.SetTensor(inputs)
 	for frame := 0; frame < layer.outputs.Frames; frame++ {
 		for row := 0; row < layer.outputs.Rows; row++ {
 			poolRow := row * layer.PoolSize

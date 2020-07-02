@@ -54,7 +54,7 @@ func (layer *ConvolutionLayer) OutputShape() LayerShape {
 
 // FeedForward applies convolutions to the input for each of the filters.
 func (layer *ConvolutionLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
-	layer.inputs.SetAll(inputs)
+	layer.inputs.SetTensor(inputs)
 	for _, filter := range layer.Filters {
 		for frame := 0; frame < inputs.Frames; frame++ {
 			for row := 0; row < inputs.Rows; row++ {

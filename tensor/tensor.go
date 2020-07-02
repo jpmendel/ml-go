@@ -163,8 +163,8 @@ func (tensor *Tensor) Set(frame int, row int, col int, value float32) error {
 	return nil
 }
 
-// SetAll sets all the values of the current tensor to the values of the input tensor.
-func (tensor *Tensor) SetAll(other *Tensor) error {
+// SetTensor sets all the values of the current tensor to the values of the input tensor.
+func (tensor *Tensor) SetTensor(other *Tensor) error {
 	if tensor.Frames != other.Frames || tensor.Rows != other.Rows || tensor.Cols != other.Cols {
 		return fmt.Errorf(
 			"Dimensions must match: (%d, %d, %d) != (%d, %d, %d)",

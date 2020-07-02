@@ -64,17 +64,7 @@ func (neuralNetwork *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32
 	if err != nil {
 		return nil, err
 	}
-	outputArray := make([][][]float32, outputs.Frames)
-	for frame := 0; frame < outputs.Frames; frame++ {
-		outputArray[frame] = make([][]float32, outputs.Rows)
-		for row := 0; row < outputs.Rows; row++ {
-			outputArray[frame][row] = make([]float32, outputs.Cols)
-			for col := 0; col < outputs.Cols; col++ {
-				outputArray[frame][row][col] = outputs.Get(frame, row, col)
-			}
-		}
-	}
-	return outputArray, nil
+	return outputs.Copy().GetAll(), nil
 }
 
 // Train takes a set of inputs and their respective targets, and adjusts the layers to produce the

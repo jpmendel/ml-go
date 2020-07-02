@@ -42,7 +42,7 @@ func TestTensorGetSet(t *testing.T) {
 		{2, -1, 2},
 	})
 
-	tensor.SetAll(set)
+	tensor.SetTensor(set)
 
 	if !tensor.Equals(set) {
 		t.Errorf("Tensor after setting all values should be:\n%swhen result is:\n%s", set.String(), tensor.String())
@@ -53,7 +53,7 @@ func TestTensorGetSet(t *testing.T) {
 		{2, -1},
 	})
 
-	err := tensor.SetAll(invalid)
+	err := tensor.SetTensor(invalid)
 
 	if err == nil {
 		t.Errorf("Setting values from invalid tensor did not trigger error")
