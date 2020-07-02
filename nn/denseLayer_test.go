@@ -13,7 +13,6 @@ func TestDenseLayer(t *testing.T) {
 	originalWeights := layer.Weights.Copy()
 
 	inputs := tsr.NewValueTensor1D([]float32{3, 4, 5})
-
 	targets := tsr.NewValueTensor1D([]float32{1, 2})
 
 	outputs, err := layer.FeedForward(inputs)
@@ -21,7 +20,7 @@ func TestDenseLayer(t *testing.T) {
 		t.Fatalf("Error in FeedForward: %s", err.Error())
 	}
 	if outputs.Frames != 1 {
-		t.Fatalf("Outputs have incorrect length: %d != %d", outputs.Frames, 1)
+		t.Fatalf("Outputs have incorrect frame length: %d != %d", outputs.Frames, 1)
 	}
 
 	if outputs.Equals(originalOutputs) {

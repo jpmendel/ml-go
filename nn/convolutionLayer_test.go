@@ -31,7 +31,7 @@ func TestConvolutionLayer(t *testing.T) {
 		t.Fatalf("Error in FeedForward: %s", err.Error())
 	}
 	if convolutions.Frames != inputs.Frames*len(filters) {
-		t.Fatalf("Convolution outputs have incorrect length: %d != %d", convolutions.Frames, inputs.Frames*len(filters))
+		t.Fatalf("Convolution outputs have incorrect frame length: %d != %d", convolutions.Frames, inputs.Frames*len(filters))
 	}
 
 	if !convolutions.Equals(solution) {
@@ -43,7 +43,7 @@ func TestConvolutionLayer(t *testing.T) {
 		t.Fatalf("Error in BackPropagate: %s", err.Error())
 	}
 	if deconvolutions.Frames != inputs.Frames {
-		t.Fatalf("Convolution inputs have incorrect length: %d != %d", deconvolutions.Frames, inputs.Frames)
+		t.Fatalf("Convolution inputs have incorrect frame length: %d != %d", deconvolutions.Frames, inputs.Frames)
 	}
 
 	if !deconvolutions.Equals(inputs) {

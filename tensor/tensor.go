@@ -266,13 +266,18 @@ func (tensor *Tensor) ApplyFunction(function func(float32, int, int, int) float3
 // String creates a string representation of the tensor.
 func (tensor *Tensor) String() string {
 	str := ""
-	for row := 0; row < tensor.Rows; row++ {
-		for col := 0; col < tensor.Cols; col++ {
-			str += fmt.Sprintf("%.4f", tensor.Get(0, row, col))
-			if col == tensor.Cols-1 {
+	for frame := 0; frame < tensor.Frames; frame++ {
+		for row := 0; row < tensor.Rows; row++ {
+			for col := 0; col < tensor.Cols; col++ {
+				str += fmt.Sprintf("%.4f", tensor.Get(frame, row, col))
+				if col == tensor.Cols-1 {
+					str += "\n"
+				} else {
+					str += " "
+				}
+			}
+			if row == tensor.Rows-1 {
 				str += "\n"
-			} else {
-				str += " "
 			}
 		}
 	}
