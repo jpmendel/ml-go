@@ -48,8 +48,8 @@ func (neuralNetwork *NeuralNetwork) Add(layers ...Layer) error {
 			if lastLayer.OutputShape() != layer.InputShape() {
 				return fmt.Errorf(
 					"Output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
-					lastLayer.OutputShape().Rows, lastLayer.OutputShape().Cols, lastLayer.OutputShape().Length,
-					layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Length,
+					lastLayer.OutputShape().Rows, lastLayer.OutputShape().Cols, lastLayer.OutputShape().Frames,
+					layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Frames,
 				)
 			}
 		}

@@ -28,15 +28,15 @@ const (
 	// LayerTypePooling is a layer where data is reduced into pools.
 	LayerTypePooling = LayerType("pooling")
 
-	// LayerTypeFlatten flattens the length of the data to 1.
+	// LayerTypeFlatten flattens the frames and rows of the data to 1.
 	LayerTypeFlatten = LayerType("flatten")
 )
 
-// LayerShape is the rows, columns and length of the data used in the layer.
+// LayerShape is the rows, columns and frames of the data used in the layer.
 type LayerShape struct {
 	Rows   int
 	Cols   int
-	Length int
+	Frames int
 }
 
 func layerForType(layerType LayerType) (Layer, error) {

@@ -6,7 +6,7 @@ import (
 	tsr "../tensor"
 )
 
-// FlattenLayer is a layer that flattens data into length 1.
+// FlattenLayer is a layer that flattens data into a single frame with a single row.
 type FlattenLayer struct {
 	inputShape  LayerShape
 	outputShape LayerShape
@@ -29,20 +29,20 @@ func NewFlattenLayer(inputRows int, inputCols int, inputFrames int) *FlattenLaye
 
 // Copy creates a deep copy of the layer.
 func (layer *FlattenLayer) Copy() Layer {
-	return NewFlattenLayer(layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Length)
+	return NewFlattenLayer(layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Frames)
 }
 
-// InputShape returns the rows, columns and length of the inputs to the layer.
+// InputShape returns the rows, columns and frames of the inputs to the layer.
 func (layer *FlattenLayer) InputShape() LayerShape {
 	return layer.inputShape
 }
 
-// OutputShape returns the rows, columns and length of outputs from the layer.
+// OutputShape returns the rows, columns and frames of outputs from the layer.
 func (layer *FlattenLayer) OutputShape() LayerShape {
 	return layer.outputShape
 }
 
-// FeedForward flattens the data from its input length to a length of 1.
+// FeedForward flattens the data from its input shape to a shape of 1 row and 1 frame.
 func (layer *FlattenLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 	flattenedIndex := 0
 	layer.inputs.SetAll(inputs)
@@ -57,7 +57,7 @@ func (layer *FlattenLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) 
 	return layer.outputs, nil
 }
 
-// BackPropagate unflattens the data to its original length.
+// BackPropagate unflattens the data to its original shape.
 func (layer *FlattenLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error) {
 	return layer.inputs, nil
 }
@@ -76,7 +76,7 @@ func (layer *FlattenLayer) MarshalJSON() ([]byte, error) {
 		Type:        LayerTypeFlatten,
 		InputRows:   layer.InputShape().Rows,
 		InputCols:   layer.InputShape().Cols,
-		InputFrames: layer.InputShape().Length,
+		InputFrames: layer.InputShape().Frames,
 	}
 	return json.Marshal(data)
 }

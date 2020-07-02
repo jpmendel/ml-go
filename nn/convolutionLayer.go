@@ -36,18 +36,18 @@ func (layer *ConvolutionLayer) Copy() Layer {
 	return NewConvolutionLayer(
 		layer.InputShape().Rows,
 		layer.InputShape().Cols,
-		layer.InputShape().Length,
+		layer.InputShape().Frames,
 		layer.Filters,
 		layer.Activation,
 	)
 }
 
-// InputShape returns the rows, columns and length of the inputs to the layer.
+// InputShape returns the rows, columns and frames of the inputs to the layer.
 func (layer *ConvolutionLayer) InputShape() LayerShape {
 	return layer.inputShape
 }
 
-// OutputShape returns the rows, columns and length of outputs from the layer.
+// OutputShape returns the rows, columns and frames of outputs from the layer.
 func (layer *ConvolutionLayer) OutputShape() LayerShape {
 	return layer.outputShape
 }
@@ -112,7 +112,7 @@ func (layer *ConvolutionLayer) MarshalJSON() ([]byte, error) {
 		Type:        LayerTypeConvolution,
 		InputRows:   layer.InputShape().Rows,
 		InputCols:   layer.InputShape().Cols,
-		InputFrames: layer.InputShape().Length,
+		InputFrames: layer.InputShape().Frames,
 		Filters:     filters,
 		Activation:  layer.Activation.Type,
 	}

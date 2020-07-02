@@ -34,15 +34,15 @@ func NewPoolingLayer(inputRows int, inputCols int, inputFrames int, poolSize int
 
 // Copy creates a deep copy of the layer.
 func (layer *PoolingLayer) Copy() Layer {
-	return NewPoolingLayer(layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Length, layer.PoolSize, layer.Pooling)
+	return NewPoolingLayer(layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Frames, layer.PoolSize, layer.Pooling)
 }
 
-// InputShape returns the rows, columns and length of the inputs to the layer.
+// InputShape returns the rows, columns and frames of the inputs to the layer.
 func (layer *PoolingLayer) InputShape() LayerShape {
 	return layer.inputShape
 }
 
-// OutputShape returns the rows, columns and length of outputs from the layer.
+// OutputShape returns the rows, columns and frames of outputs from the layer.
 func (layer *PoolingLayer) OutputShape() LayerShape {
 	return layer.outputShape
 }
@@ -84,7 +84,7 @@ func (layer *PoolingLayer) MarshalJSON() ([]byte, error) {
 		Type:        LayerTypePooling,
 		InputRows:   layer.InputShape().Rows,
 		InputCols:   layer.InputShape().Cols,
-		InputFrames: layer.InputShape().Length,
+		InputFrames: layer.InputShape().Frames,
 		PoolSize:    layer.PoolSize,
 		Pooling:     layer.Pooling.Method,
 	}

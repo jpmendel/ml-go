@@ -48,12 +48,12 @@ func (layer *DenseLayer) Copy() Layer {
 	return newLayer
 }
 
-// InputShape returns the rows, columns and length of the inputs to the layer.
+// InputShape returns the rows, columns and frames of the inputs to the layer.
 func (layer *DenseLayer) InputShape() LayerShape {
 	return layer.inputShape
 }
 
-// OutputShape returns the rows, columns and length of outputs from the layer.
+// OutputShape returns the rows, columns and frames of outputs from the layer.
 func (layer *DenseLayer) OutputShape() LayerShape {
 	return layer.outputShape
 }
@@ -61,7 +61,7 @@ func (layer *DenseLayer) OutputShape() LayerShape {
 // FeedForward computes the outputs of the layer based on the inputs, weights and bias.
 func (layer *DenseLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 	if inputs.Frames != 1 {
-		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", inputs.Frames)
+		return nil, fmt.Errorf("Input shape must have frame length of 1, is: %d", inputs.Frames)
 	}
 	layer.inputs.SetAll(inputs)
 	_, err := tsr.MatrixMultiply(layer.inputs, layer.Weights, layer.outputs)
@@ -79,7 +79,7 @@ func (layer *DenseLayer) FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error) {
 // BackPropagate updates the weights and bias of the layer based on a set of deltas and a learning rate.
 func (layer *DenseLayer) BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error) {
 	if outputs.Frames != 1 {
-		return nil, fmt.Errorf("Input shape must have length of 1, is: %d", outputs.Frames)
+		return nil, fmt.Errorf("Input shape must have frame length of 1, is: %d", outputs.Frames)
 	}
 	gradient := layer.Activation.Derivative(layer.outputs.Copy())
 	err := gradient.ScaleTensor(outputs)

@@ -124,8 +124,8 @@ func TestNeuralNetworkXOR(t *testing.T) {
 func TestNeuralNetworkSaveLoad(t *testing.T) {
 	neuralNetwork := NewNeuralNetwork()
 	conv := NewConvolutionLayer(16, 16, 1, []*tsr.Tensor{FilterVerticalEdges, FilterHorizontalEdges}, ActivationRELU)
-	pool := NewPoolingLayer(conv.OutputShape().Rows, conv.OutputShape().Cols, conv.OutputShape().Length, 2, PoolingMax)
-	flat := NewFlattenLayer(pool.OutputShape().Rows, pool.OutputShape().Cols, pool.OutputShape().Length)
+	pool := NewPoolingLayer(conv.OutputShape().Rows, conv.OutputShape().Cols, conv.OutputShape().Frames, 2, PoolingMax)
+	flat := NewFlattenLayer(pool.OutputShape().Rows, pool.OutputShape().Cols, pool.OutputShape().Frames)
 	dense1 := NewDenseLayer(flat.OutputShape().Cols, 16, ActivationRELU)
 	dense2 := NewDenseLayer(dense1.OutputShape().Cols, 8, ActivationSoftmax)
 	neuralNetwork.Add(conv, pool, flat, dense1, dense2)
