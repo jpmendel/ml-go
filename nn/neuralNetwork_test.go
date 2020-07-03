@@ -41,6 +41,11 @@ func TestNeuralNetworkAddGetLayers(t *testing.T) {
 		NewDenseLayer(3, 1, ActivationSigmoid),
 	)
 
+	err := neuralNetwork.Add(NewDenseLayer(2, 2, ActivationSigmoid))
+	if err == nil {
+		t.Errorf("Did not trigger error on incorrect layer shape")
+	}
+
 	firstLayer := neuralNetwork.LayerAt(0)
 	if firstLayer.InputShape().Cols != 2 || firstLayer.OutputShape().Cols != 3 {
 		t.Errorf("Incorrect inputs and outputs: (%d, %d) != (%d, %d)", firstLayer.InputShape().Cols, firstLayer.OutputShape().Cols, 2, 3)
