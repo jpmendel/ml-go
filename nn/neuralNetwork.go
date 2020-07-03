@@ -8,7 +8,7 @@ import (
 	tsr "../tensor"
 )
 
-// NeuralNetwork is a basic fully connected neural network.
+// NeuralNetwork is a basic neural network that can handle multiple layer types.
 type NeuralNetwork struct {
 	layers []Layer
 }
