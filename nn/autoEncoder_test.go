@@ -1,6 +1,10 @@
 package nn
 
-import "testing"
+import (
+	"math/rand"
+	"testing"
+	"time"
+)
 
 func TestAutoEncoderCopy(t *testing.T) {
 	autoEncoder := NewAutoEncoder(4)
@@ -34,5 +38,44 @@ func TestAutoEncoderAddGetLayers(t *testing.T) {
 	outOfBoundsLayer := autoEncoder.LayerAt(2)
 	if outOfBoundsLayer != nil {
 		t.Errorf("Found layer at index where one does not exist")
+	}
+}
+
+func TestAutoEncoderEncodeDecode(t *testing.T) {
+	rand.Seed(time.Now().Unix())
+	inputs := [][]float32{
+		{0.0, 0.0, 1.0, 1.0},
+		{0.0, 1.0, 1.0, 0.0},
+	}
+
+	autoEncoder := NewAutoEncoder(4)
+	autoEncoder.AddCodingLayer(2, ActivationSigmoid)
+
+	for i := 0; i < 10000; i++ {
+		index := rand.Intn(len(inputs))
+		data := inputs[index]
+		err := autoEncoder.Train(data, 0.3, 0.2)
+		if err != nil {
+			t.Fatalf("Error in Train: %s", err.Error())
+		}
+	}
+	for i, input := range inputs {
+		encoded, err := autoEncoder.Encode(input)
+		if err != nil {
+			t.Fatalf("Error in Encode: %s", err.Error())
+		}
+
+		decoded, err := autoEncoder.Decode(encoded)
+		if err != nil {
+			t.Fatalf("Error in Decode: %s", err.Error())
+		}
+
+		for j := 0; j < len(decoded); j++ {
+			low := input[j] - 0.1
+			high := input[j] + 0.1
+			if decoded[j] < low || decoded[j] > high {
+				t.Errorf("Incorrect decode for input %d at index %d: %.3f", i, j, decoded[j])
+			}
+		}
 	}
 }
