@@ -4,20 +4,20 @@ import "testing"
 
 func TestAutoEncoderCopy(t *testing.T) {
 	autoEncoder := NewAutoEncoder(4)
-	autoEncoder.AddCodingLayer(2, ActivationSigmoid)
+	autoEncoder.AddCodingLayer(3, ActivationSigmoid)
 
 	shallow := autoEncoder
 	deep := autoEncoder.Copy()
 
-	autoEncoder.AddDecodingLayer(ActivationSoftmax)
+	autoEncoder.AddCodingLayer(2, ActivationSigmoid)
 
 	shallowLayers := shallow.LayerCount()
-	if shallowLayers != 2 {
+	if shallowLayers != 4 {
 		t.Errorf("Shallow copy layer count shoud be 2, is: %d", shallowLayers)
 	}
 
 	deepLayers := deep.LayerCount()
-	if deepLayers != 1 {
+	if deepLayers != 2 {
 		t.Errorf("Deep copy layer count should be 1, is: %d", deepLayers)
 	}
 }
@@ -25,17 +25,6 @@ func TestAutoEncoderCopy(t *testing.T) {
 func TestAutoEncoderAddGetLayers(t *testing.T) {
 	autoEncoder := NewAutoEncoder(4)
 	autoEncoder.AddCodingLayer(2, ActivationSigmoid)
-	autoEncoder.AddDecodingLayer(ActivationSoftmax)
-
-	err := autoEncoder.AddCodingLayer(2, ActivationSigmoid)
-	if err == nil {
-		t.Errorf("Did not trigger error on coding layer after decoding layer")
-	}
-
-	err = autoEncoder.AddDecodingLayer(ActivationSoftmax)
-	if err == nil {
-		t.Errorf("Did not trigger error on multiple decoding layers")
-	}
 
 	firstLayer := autoEncoder.LayerAt(0)
 	if firstLayer.OutputShape().Cols != 2 {

@@ -2,7 +2,6 @@ package nn
 
 import (
 	"encoding/json"
-	"fmt"
 	"math/rand"
 	"os"
 
@@ -11,81 +10,69 @@ import (
 
 // AutoEncoder is a neural network that trains against its own inputs to encode features.
 type AutoEncoder struct {
-	inputSize int
-	layers    []*DenseLayer
-	isClosed  bool
+	inputSize      int
+	encodingLayers []*DenseLayer
+	decodingLayers []*DenseLayer
 }
 
 // NewAutoEncoder Creates a new instance of an AutoEncoder.
 func NewAutoEncoder(inputSize int) *AutoEncoder {
 	return &AutoEncoder{
-		inputSize: inputSize,
-		layers:    []*DenseLayer{},
-		isClosed:  false,
+		inputSize:      inputSize,
+		encodingLayers: []*DenseLayer{},
+		decodingLayers: []*DenseLayer{},
 	}
 }
 
 // Copy creates a deep copy of the auto encoder.
 func (autoEncoder *AutoEncoder) Copy() *AutoEncoder {
 	newAutoEncoder := NewAutoEncoder(autoEncoder.inputSize)
-	for i, layer := range autoEncoder.layers {
-		if i == len(autoEncoder.layers)-1 {
-			newAutoEncoder.AddDecodingLayer(layer.Activation)
-		} else {
-			newAutoEncoder.AddCodingLayer(layer.OutputShape().Cols, layer.Activation)
-		}
+	for _, layer := range autoEncoder.encodingLayers {
+		newAutoEncoder.encodingLayers = append(newAutoEncoder.encodingLayers, layer)
+	}
+	for _, layer := range autoEncoder.decodingLayers {
+		newAutoEncoder.decodingLayers = append(newAutoEncoder.decodingLayers, layer)
 	}
 	return newAutoEncoder
 }
 
 // LayerCount returns the number of layers in the neural network.
 func (autoEncoder *AutoEncoder) LayerCount() int {
-	return len(autoEncoder.layers)
+	return len(autoEncoder.encodingLayers) + len(autoEncoder.decodingLayers)
 }
 
 // LayerAt gets a layer at a certain index.
 func (autoEncoder *AutoEncoder) LayerAt(index int) Layer {
-	if index < 0 || index >= len(autoEncoder.layers) {
+	if index < 0 || index >= len(autoEncoder.encodingLayers) {
 		return nil
 	}
-	return autoEncoder.layers[index]
+	return autoEncoder.encodingLayers[index]
 }
 
 // AddCodingLayer adds an intermediate layer of features to the auto encoder.
 func (autoEncoder *AutoEncoder) AddCodingLayer(coded int, activation ActivationFunction) error {
-	if autoEncoder.isClosed {
-		return fmt.Errorf("The auto encoder has already been closed with a decoding layer")
-	}
 	var inputSize int
-	if len(autoEncoder.layers) > 0 {
-		inputSize = autoEncoder.layers[len(autoEncoder.layers)-1].OutputShape().Cols
+	if len(autoEncoder.encodingLayers) > 0 {
+		inputSize = autoEncoder.encodingLayers[len(autoEncoder.encodingLayers)-1].OutputShape().Cols
 	} else {
 		inputSize = autoEncoder.inputSize
 	}
-	layer := NewDenseLayer(inputSize, coded, activation)
-	autoEncoder.layers = append(autoEncoder.layers, layer)
-	return nil
-}
-
-// AddDecodingLayer closes the auto encoder, allowing it to train itself. This must be the last layer.
-func (autoEncoder *AutoEncoder) AddDecodingLayer(activation ActivationFunction) error {
-	if autoEncoder.isClosed {
-		return fmt.Errorf("The auto encoder has already been closed with a decoding layer")
-	}
-	var inputSize int
-	if len(autoEncoder.layers) > 0 {
-		inputSize = autoEncoder.layers[len(autoEncoder.layers)-1].OutputShape().Cols
-	} else {
-		inputSize = autoEncoder.inputSize
-	}
-	layer := NewDenseLayer(inputSize, autoEncoder.inputSize, activation)
-	autoEncoder.layers = append(autoEncoder.layers, layer)
-	autoEncoder.isClosed = true
+	encodingLayer := NewDenseLayer(inputSize, coded, activation)
+	decodingLayer := NewDenseLayer(coded, inputSize, activation)
+	autoEncoder.encodingLayers = append(autoEncoder.encodingLayers, encodingLayer)
+	autoEncoder.decodingLayers = append(autoEncoder.decodingLayers, nil)
+	copy(autoEncoder.decodingLayers[1:], autoEncoder.decodingLayers)
+	autoEncoder.decodingLayers[0] = decodingLayer
 	return nil
 }
 
 func (autoEncoder *AutoEncoder) isSparse() bool {
-	for _, layer := range autoEncoder.layers {
+	for _, layer := range autoEncoder.encodingLayers {
+		if layer.OutputShape().Cols >= autoEncoder.inputSize {
+			return true
+		}
+	}
+	for _, layer := range autoEncoder.decodingLayers {
 		if layer.OutputShape().Cols >= autoEncoder.inputSize {
 			return true
 		}
@@ -93,22 +80,30 @@ func (autoEncoder *AutoEncoder) isSparse() bool {
 	return false
 }
 
-// Predict generates a prediction for a certain set of inputs.
-func (autoEncoder *AutoEncoder) Predict(inputs []float32) ([][]float32, error) {
-	if !autoEncoder.isClosed {
-		return nil, fmt.Errorf("The auto encoder has not been closed with a decoding layer")
-	}
-	_, err := autoEncoder.feedForward(inputs)
+// Encode generates an encoded representation for a certain set of inputs.
+func (autoEncoder *AutoEncoder) Encode(inputs []float32) ([]float32, error) {
+	inputsTensor := tsr.NewValueTensor1D(inputs)
+	encoded, err := autoEncoder.feedForward(inputsTensor, autoEncoder.encodingLayers, false)
 	if err != nil {
 		return nil, err
 	}
-	outputs := make([][]float32, len(autoEncoder.layers)-1)
-	for i := 0; i < len(autoEncoder.layers)-1; i++ {
-		layerData := autoEncoder.layers[i].outputs
-		outputs[i] = make([]float32, layerData.Cols)
-		for col := 0; col < layerData.Cols; col++ {
-			outputs[i][col] = layerData.Get(0, 0, col)
-		}
+	outputs := make([]float32, encoded.Cols)
+	for i := 0; i < encoded.Cols; i++ {
+		outputs[i] = encoded.Get(0, 0, i)
+	}
+	return outputs, nil
+}
+
+// Decode decodes a coded representation to a set of outputs.
+func (autoEncoder *AutoEncoder) Decode(coded []float32) ([]float32, error) {
+	codedTensor := tsr.NewValueTensor1D(coded)
+	decoded, err := autoEncoder.feedForward(codedTensor, autoEncoder.decodingLayers, false)
+	if err != nil {
+		return nil, err
+	}
+	outputs := make([]float32, decoded.Cols)
+	for i := 0; i < decoded.Cols; i++ {
+		outputs[i] = decoded.Get(0, 0, i)
 	}
 	return outputs, nil
 }
@@ -116,10 +111,12 @@ func (autoEncoder *AutoEncoder) Predict(inputs []float32) ([][]float32, error) {
 // Train takes a set of inputs and their respective targets, and adjusts the layers to produce the
 // given outputs through supervised learning.
 func (autoEncoder *AutoEncoder) Train(inputs []float32, learningRate float32, momentum float32) error {
-	if !autoEncoder.isClosed {
-		return fmt.Errorf("The auto encoder has not been closed with a decoding layer")
+	inputsTensor := tsr.NewValueTensor1D(inputs)
+	coded, err := autoEncoder.feedForward(inputsTensor, autoEncoder.encodingLayers, true)
+	if err != nil {
+		return err
 	}
-	outputs, err := autoEncoder.feedForward(inputs)
+	outputs, err := autoEncoder.feedForward(coded, autoEncoder.decodingLayers, true)
 	if err != nil {
 		return err
 	}
@@ -131,15 +128,15 @@ func (autoEncoder *AutoEncoder) Train(inputs []float32, learningRate float32, mo
 	return autoEncoder.backPropagate(deltas, learningRate, momentum)
 }
 
-func (autoEncoder *AutoEncoder) feedForward(inputs []float32) (*tsr.Tensor, error) {
-	nextInputs := tsr.NewValueTensor1D(inputs)
+func (autoEncoder *AutoEncoder) feedForward(inputs *tsr.Tensor, layers []*DenseLayer, train bool) (*tsr.Tensor, error) {
+	nextInputs := inputs
 	var err error
-	for _, layer := range autoEncoder.layers {
+	for _, layer := range layers {
 		nextInputs, err = layer.FeedForward(nextInputs)
 		if err != nil {
 			return nil, err
 		}
-		if autoEncoder.isSparse() {
+		if train && autoEncoder.isSparse() {
 			for i := 0; i < nextInputs.Cols/2; i++ {
 				col := rand.Intn(nextInputs.Cols)
 				nextInputs.Set(0, 0, col, 0.0)
@@ -152,8 +149,13 @@ func (autoEncoder *AutoEncoder) feedForward(inputs []float32) (*tsr.Tensor, erro
 func (autoEncoder *AutoEncoder) backPropagate(deltas *tsr.Tensor, learningRate float32, momentum float32) error {
 	nextDeltas := deltas
 	var err error
-	for i := len(autoEncoder.layers) - 1; i >= 0; i-- {
-		layer := autoEncoder.layers[i]
+	for i := autoEncoder.LayerCount() - 1; i >= 0; i-- {
+		var layer *DenseLayer
+		if i < len(autoEncoder.encodingLayers) {
+			layer = autoEncoder.encodingLayers[i]
+		} else {
+			layer = autoEncoder.decodingLayers[i-len(autoEncoder.encodingLayers)]
+		}
 		nextDeltas, err = layer.BackPropagate(nextDeltas, learningRate, momentum)
 		if err != nil {
 			return err
@@ -170,9 +172,11 @@ func (autoEncoder *AutoEncoder) SaveToFile(fileName string) error {
 	}
 	defer file.Close()
 	autoEncoderData := struct {
-		Layers []*DenseLayer `json:"layers"`
+		EncodingLayers []*DenseLayer `json:"encodingLayers"`
+		DecodingLayers []*DenseLayer `json:"decodingLayers"`
 	}{
-		Layers: autoEncoder.layers,
+		EncodingLayers: autoEncoder.encodingLayers,
+		DecodingLayers: autoEncoder.decodingLayers,
 	}
 	return json.NewEncoder(file).Encode(autoEncoderData)
 }
@@ -185,22 +189,18 @@ func (autoEncoder *AutoEncoder) LoadFromFile(fileName string) error {
 	}
 	defer file.Close()
 	autoEncoderData := struct {
-		Layers []*DenseLayer `json:"layers"`
+		EncodingLayers []*DenseLayer `json:"encodingLayers"`
+		DecodingLayers []*DenseLayer `json:"decodingLayers"`
 	}{}
 	err = json.NewDecoder(file).Decode(&autoEncoderData)
 	if err != nil {
 		return err
 	}
-	for i, layer := range autoEncoderData.Layers {
-		var err error
-		if i == len(autoEncoder.layers)-1 {
-			err = autoEncoder.AddDecodingLayer(layer.Activation)
-		} else {
-			err = autoEncoder.AddCodingLayer(layer.OutputShape().Cols, layer.Activation)
-		}
-		if err != nil {
-			return err
-		}
+	for _, layer := range autoEncoderData.EncodingLayers {
+		autoEncoder.encodingLayers = append(autoEncoder.encodingLayers, layer)
+	}
+	for _, layer := range autoEncoderData.DecodingLayers {
+		autoEncoder.decodingLayers = append(autoEncoder.decodingLayers, layer)
 	}
 	return nil
 }
