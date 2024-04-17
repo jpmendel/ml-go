@@ -3,7 +3,7 @@ package nn
 import (
 	"testing"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 func TestPoolingLayer(t *testing.T) {

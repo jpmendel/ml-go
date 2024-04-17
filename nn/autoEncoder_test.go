@@ -3,7 +3,6 @@ package nn
 import (
 	"math/rand"
 	"testing"
-	"time"
 )
 
 func TestAutoEncoderCopy(t *testing.T) {
@@ -42,7 +41,6 @@ func TestAutoEncoderAddGetLayers(t *testing.T) {
 }
 
 func TestAutoEncoderEncodeDecode(t *testing.T) {
-	rand.Seed(time.Now().Unix())
 	inputs := [][]float32{
 		{0.0, 0.0, 1.0, 1.0},
 		{0.0, 1.0, 1.0, 0.0},

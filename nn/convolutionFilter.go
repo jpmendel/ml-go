@@ -1,6 +1,6 @@
 package nn
 
-import tsr "../tensor"
+import tsr "github.com/jpmendel/ml-go/tensor"
 
 // FilterVerticalEdges emphasizes vertical edges in data.
 var FilterVerticalEdges = tsr.NewValueTensor2D([][]float32{

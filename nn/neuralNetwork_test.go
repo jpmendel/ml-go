@@ -4,9 +4,8 @@ import (
 	"math/rand"
 	"os"
 	"testing"
-	"time"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 type TrainingData struct {
@@ -58,21 +57,20 @@ func TestNeuralNetworkAddGetLayers(t *testing.T) {
 }
 
 func TestNeuralNetworkXOR(t *testing.T) {
-	rand.Seed(time.Now().Unix())
 	trainingData := []TrainingData{
-		TrainingData{
+		{
 			Inputs:  [][][]float32{{{0, 0}}},
 			Targets: [][][]float32{{{0}}},
 		},
-		TrainingData{
+		{
 			Inputs:  [][][]float32{{{0, 1}}},
 			Targets: [][][]float32{{{1}}},
 		},
-		TrainingData{
+		{
 			Inputs:  [][][]float32{{{1, 0}}},
 			Targets: [][][]float32{{{1}}},
 		},
-		TrainingData{
+		{
 			Inputs:  [][][]float32{{{1, 1}}},
 			Targets: [][][]float32{{{0}}},
 		},
@@ -84,7 +82,7 @@ func TestNeuralNetworkXOR(t *testing.T) {
 		NewDenseLayer(2, 1, ActivationSigmoid),
 	)
 
-	for i := 0; i < 10000; i++ {
+	for i := 0; i < 100000; i++ {
 		index := rand.Intn(len(trainingData))
 		data := trainingData[index]
 		err := neuralNetwork.Train(data.Inputs, data.Targets, 0.3, 0.5)

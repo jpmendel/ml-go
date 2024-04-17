@@ -3,7 +3,7 @@ package nn
 import (
 	"fmt"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // Layer is a stage of data computation in a neural network.
@@ -50,6 +50,6 @@ func layerForType(layerType LayerType) (Layer, error) {
 	case LayerTypeFlatten:
 		return &FlattenLayer{}, nil
 	default:
-		return nil, fmt.Errorf("Invalid layer type: %s", layerType)
+		return nil, fmt.Errorf("invalid layer type: %s", layerType)
 	}
 }

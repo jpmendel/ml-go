@@ -3,7 +3,7 @@ package nn
 import (
 	"encoding/json"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // ConvolutionLayer is a layer that performs convolutional filters on data.

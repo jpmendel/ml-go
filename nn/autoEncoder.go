@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"os"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // AutoEncoder is a neural network that trains against its own inputs to encode features.
@@ -27,12 +27,8 @@ func NewAutoEncoder(inputSize int) *AutoEncoder {
 // Copy creates a deep copy of the auto encoder.
 func (autoEncoder *AutoEncoder) Copy() *AutoEncoder {
 	newAutoEncoder := NewAutoEncoder(autoEncoder.inputSize)
-	for _, layer := range autoEncoder.encodingLayers {
-		newAutoEncoder.encodingLayers = append(newAutoEncoder.encodingLayers, layer)
-	}
-	for _, layer := range autoEncoder.decodingLayers {
-		newAutoEncoder.decodingLayers = append(newAutoEncoder.decodingLayers, layer)
-	}
+	newAutoEncoder.encodingLayers = append(newAutoEncoder.encodingLayers, autoEncoder.encodingLayers...)
+	newAutoEncoder.decodingLayers = append(newAutoEncoder.decodingLayers, autoEncoder.decodingLayers...)
 	return newAutoEncoder
 }
 
@@ -196,11 +192,7 @@ func (autoEncoder *AutoEncoder) LoadFromFile(fileName string) error {
 	if err != nil {
 		return err
 	}
-	for _, layer := range autoEncoderData.EncodingLayers {
-		autoEncoder.encodingLayers = append(autoEncoder.encodingLayers, layer)
-	}
-	for _, layer := range autoEncoderData.DecodingLayers {
-		autoEncoder.decodingLayers = append(autoEncoder.decodingLayers, layer)
-	}
+	autoEncoder.encodingLayers = append(autoEncoder.encodingLayers, autoEncoderData.EncodingLayers...)
+	autoEncoder.decodingLayers = append(autoEncoder.decodingLayers, autoEncoderData.DecodingLayers...)
 	return nil
 }

@@ -3,7 +3,7 @@ package nn
 import (
 	"encoding/json"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // FlattenLayer is a layer that flattens data into a single frame with a single row.

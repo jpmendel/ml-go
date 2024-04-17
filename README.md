@@ -1,12 +1,6 @@
 # ml-go
-A simple machine learning library for Go.
 
-## Setup
-
-Use `go get` to retreive the package.
-```
-go get github.com/jpmendel/ml-go
-```
+A practice implementation of basic machine learning concepts written in Go.
 
 ## Usage
 
@@ -21,7 +15,7 @@ neuralNetwork := nn.NewNeuralNetwork()
 // Add layers to construct the neural network. Outputs of each layer must match the inputs of the next one.
 neuralNetwork.Add(
     nn.NewDenseLayer(2, 3, nn.ActivationSigmoid),
-    nn.NewDenseLayer(3, 1, nn.ActivationSidmoid),
+    nn.NewDenseLayer(3, 1, nn.ActivationSigmoid),
 )
 
 myTrainingData := [][][][]float32{ ... }
@@ -53,7 +47,8 @@ import (
 neuralNetwork := nn.NewNeuralNetwork()
 
 // ConvolutionLayer applies various operations to the input data.
-convolutionLayer := nn.NewConvolutionLayer(16, 16, 1, []*tensor.Tensor{nn.FilterVerticalEdges, nn.FilterHorizontalEdges}, nn.ActivationRELU)
+tensors := []*tensor.Tensor{nn.FilterVerticalEdges, nn.FilterHorizontalEdges}
+convolutionLayer := nn.NewConvolutionLayer(16, 16, 1, tensors, nn.ActivationRELU)
 
 // PoolingLayer subsamples data down to a smaller size.
 poolingLayer := nn.NewPoolingLayer(16, 16, 2, 2, nn.PoolingMax)

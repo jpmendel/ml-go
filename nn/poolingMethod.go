@@ -1,6 +1,6 @@
 package nn
 
-import tsr "../tensor"
+import tsr "github.com/jpmendel/ml-go/tensor"
 
 // PoolingFunction represents a function used to find a pooled value.
 type PoolingFunction struct {

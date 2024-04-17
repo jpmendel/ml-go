@@ -3,7 +3,7 @@ package nn
 import (
 	"math"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // ActivationFunction represents a function used to activate neural network outputs.

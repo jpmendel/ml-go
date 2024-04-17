@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // NeuralNetwork is a basic neural network that can handle multiple layer types.
@@ -47,7 +47,7 @@ func (neuralNetwork *NeuralNetwork) Add(layers ...Layer) error {
 			lastLayer := neuralNetwork.layers[len(neuralNetwork.layers)-1]
 			if lastLayer.OutputShape() != layer.InputShape() {
 				return fmt.Errorf(
-					"Output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
+					"output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
 					lastLayer.OutputShape().Rows, lastLayer.OutputShape().Cols, lastLayer.OutputShape().Frames,
 					layer.InputShape().Rows, layer.InputShape().Cols, layer.InputShape().Frames,
 				)

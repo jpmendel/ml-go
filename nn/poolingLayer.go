@@ -3,7 +3,7 @@ package nn
 import (
 	"encoding/json"
 
-	tsr "../tensor"
+	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // PoolingLayer is a layer that pools data into a smaller form.
