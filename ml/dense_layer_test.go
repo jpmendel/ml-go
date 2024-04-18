@@ -1,10 +1,6 @@
-package nn
+package ml
 
-import (
-	"testing"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
-)
+import "testing"
 
 func TestDenseLayer(t *testing.T) {
 	layer := NewDenseLayer(3, 2, ActivationRELU)
@@ -12,8 +8,8 @@ func TestDenseLayer(t *testing.T) {
 	originalOutputs := layer.outputs.Copy()
 	originalWeights := layer.Weights.Copy()
 
-	inputs := tsr.NewValueTensor1D([]float32{3, 4, 5})
-	targets := tsr.NewValueTensor1D([]float32{1, 2})
+	inputs := NewValueTensor1D([]float32{3, 4, 5})
+	targets := NewValueTensor1D([]float32{1, 2})
 
 	outputs, err := layer.FeedForward(inputs)
 	if err != nil {

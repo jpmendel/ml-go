@@ -1,15 +1,11 @@
-package nn
+package ml
 
-import (
-	"testing"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
-)
+import "testing"
 
 func TestFlattenLayer(t *testing.T) {
 	layer := NewFlattenLayer(2, 3, 3)
 
-	inputs := tsr.NewValueTensor3D([][][]float32{
+	inputs := NewValueTensor3D([][][]float32{
 		{
 			{1, 2, 3},
 			{4, 5, 6},
@@ -24,7 +20,7 @@ func TestFlattenLayer(t *testing.T) {
 		},
 	})
 
-	solution := tsr.NewValueTensor1D([]float32{
+	solution := NewValueTensor1D([]float32{
 		1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18,
 	})
 

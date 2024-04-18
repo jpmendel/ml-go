@@ -1,4 +1,4 @@
-package tensor
+package ml
 
 import (
 	"fmt"
@@ -102,19 +102,19 @@ func NewValueTensor3D(values [][][]float32) *Tensor {
 }
 
 // Copy creates a deep copy of the tensor.
-func (tensor *Tensor) Copy() *Tensor {
-	return NewValueTensor3D(tensor.values)
+func (t *Tensor) Copy() *Tensor {
+	return NewValueTensor3D(t.values)
 }
 
 // Equals checks that all the values in two matrices are equivalent.
-func (tensor *Tensor) Equals(other *Tensor) bool {
-	if tensor.Rows != other.Rows || tensor.Cols != other.Cols {
+func (t *Tensor) Equals(other *Tensor) bool {
+	if t.Rows != other.Rows || t.Cols != other.Cols {
 		return false
 	}
-	for frame := 0; frame < tensor.Frames; frame++ {
-		for row := 0; row < tensor.Rows; row++ {
-			for col := 0; col < tensor.Cols; col++ {
-				if tensor.Get(frame, row, col) != other.Get(frame, row, col) {
+	for frame := 0; frame < t.Frames; frame++ {
+		for row := 0; row < t.Rows; row++ {
+			for col := 0; col < t.Cols; col++ {
+				if t.Get(frame, row, col) != other.Get(frame, row, col) {
 					return false
 				}
 			}
@@ -124,30 +124,30 @@ func (tensor *Tensor) Equals(other *Tensor) bool {
 }
 
 // Get retrieves a value at a specific row and column.
-func (tensor *Tensor) Get(frame int, row int, col int) float32 {
-	if frame < 0 || frame >= tensor.Frames || row < 0 || row >= tensor.Rows || col < 0 || col >= tensor.Cols {
+func (t *Tensor) Get(frame int, row int, col int) float32 {
+	if frame < 0 || frame >= t.Frames || row < 0 || row >= t.Rows || col < 0 || col >= t.Cols {
 		log.Panicf("Dimensions out of bounds: (%d, %d, %d)", frame, row, col)
 	}
-	return tensor.values[frame][row][col]
+	return t.values[frame][row][col]
 }
 
 // GetFrame retrieves one 2D frame of values from the tensor.
-func (tensor *Tensor) GetFrame(frame int) [][]float32 {
-	return tensor.values[frame]
+func (t *Tensor) GetFrame(frame int) [][]float32 {
+	return t.values[frame]
 }
 
 // GetAll retrieves all values from the tensor.
-func (tensor *Tensor) GetAll() [][][]float32 {
-	return tensor.values
+func (t *Tensor) GetAll() [][][]float32 {
+	return t.values
 }
 
 // Sum gets the sum of all values in the tensor.
-func (tensor *Tensor) Sum() float32 {
+func (t *Tensor) Sum() float32 {
 	sum := float32(0.0)
-	for frame := 0; frame < tensor.Frames; frame++ {
-		for row := 0; row < tensor.Rows; row++ {
-			for col := 0; col < tensor.Cols; col++ {
-				sum += tensor.Get(frame, row, col)
+	for frame := 0; frame < t.Frames; frame++ {
+		for row := 0; row < t.Rows; row++ {
+			for col := 0; col < t.Cols; col++ {
+				sum += t.Get(frame, row, col)
 			}
 		}
 	}
@@ -155,128 +155,128 @@ func (tensor *Tensor) Sum() float32 {
 }
 
 // Set sets a new value at a specific row and column.
-func (tensor *Tensor) Set(frame int, row int, col int, value float32) error {
-	if frame < 0 || frame >= tensor.Frames || row < 0 || row >= tensor.Rows || col < 0 || col >= tensor.Cols {
-		return fmt.Errorf("Dimensions out of bounds: (%d, %d, %d)", frame, row, col)
+func (t *Tensor) Set(frame int, row int, col int, value float32) error {
+	if frame < 0 || frame >= t.Frames || row < 0 || row >= t.Rows || col < 0 || col >= t.Cols {
+		return fmt.Errorf("dimensions out of bounds: (%d, %d, %d)", frame, row, col)
 	}
-	tensor.values[frame][row][col] = value
+	t.values[frame][row][col] = value
 	return nil
 }
 
 // SetTensor sets all the values of the current tensor to the values of the input tensor.
-func (tensor *Tensor) SetTensor(other *Tensor) error {
-	if tensor.Frames != other.Frames || tensor.Rows != other.Rows || tensor.Cols != other.Cols {
+func (t *Tensor) SetTensor(other *Tensor) error {
+	if t.Frames != other.Frames || t.Rows != other.Rows || t.Cols != other.Cols {
 		return fmt.Errorf(
-			"Dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
-			tensor.Frames, tensor.Rows, tensor.Cols, other.Frames, other.Rows, other.Cols,
+			"dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
+			t.Frames, t.Rows, t.Cols, other.Frames, other.Rows, other.Cols,
 		)
 	}
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return other.Get(frame, row, col)
 	})
 	return nil
 }
 
 // SetRandom sets all the values of the current tensor to random values between min and max.
-func (tensor *Tensor) SetRandom(min float32, max float32) error {
+func (t *Tensor) SetRandom(min float32, max float32) error {
 	if min >= max {
-		return fmt.Errorf("Minimum must be less than maximum: %f >= %f", min, max)
+		return fmt.Errorf("ninimum must be less than maximum: %f >= %f", min, max)
 	}
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return rand.Float32()*(max-min) + min
 	})
 	return nil
 }
 
 // Add adds a scalar value to all the values of the tensor.
-func (tensor *Tensor) Add(value float32) {
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+func (t *Tensor) Add(value float32) {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current + value
 	})
 }
 
 // AddTensor adds the values of the input tensor to the values of the current tensor.
-func (tensor *Tensor) AddTensor(other *Tensor) error {
-	if tensor.Frames != other.Frames || tensor.Rows != other.Rows || tensor.Cols != other.Cols {
+func (t *Tensor) AddTensor(other *Tensor) error {
+	if t.Frames != other.Frames || t.Rows != other.Rows || t.Cols != other.Cols {
 		return fmt.Errorf(
-			"Dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
-			tensor.Frames, tensor.Rows, tensor.Cols, other.Frames, other.Rows, other.Cols,
+			"dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
+			t.Frames, t.Rows, t.Cols, other.Frames, other.Rows, other.Cols,
 		)
 	}
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current + other.Get(frame, row, col)
 	})
 	return nil
 }
 
 // Subtract subtracts a scalar value from all the values of the tensor.
-func (tensor *Tensor) Subtract(value float32) {
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+func (t *Tensor) Subtract(value float32) {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current - value
 	})
 }
 
 // SubtractTensor subtracts the values of the input tensor from the values of the current tensor.
-func (tensor *Tensor) SubtractTensor(other *Tensor) error {
-	if tensor.Frames != other.Frames || tensor.Rows != other.Rows || tensor.Cols != other.Cols {
+func (t *Tensor) SubtractTensor(other *Tensor) error {
+	if t.Frames != other.Frames || t.Rows != other.Rows || t.Cols != other.Cols {
 		return fmt.Errorf(
-			"Dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
-			tensor.Frames, tensor.Rows, tensor.Cols, other.Frames, other.Rows, other.Cols,
+			"dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
+			t.Frames, t.Rows, t.Cols, other.Frames, other.Rows, other.Cols,
 		)
 	}
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current - other.Get(frame, row, col)
 	})
 	return nil
 }
 
 // Scale multiplies all the values of the current tensor by a scalar value.
-func (tensor *Tensor) Scale(value float32) {
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+func (t *Tensor) Scale(value float32) {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current * value
 	})
 }
 
 // ScaleTensor multiplies all the values of the current tensor by the values of the input tensor.
-func (tensor *Tensor) ScaleTensor(other *Tensor) error {
-	if tensor.Frames != other.Frames || tensor.Rows != other.Rows || tensor.Cols != other.Cols {
+func (t *Tensor) ScaleTensor(other *Tensor) error {
+	if t.Frames != other.Frames || t.Rows != other.Rows || t.Cols != other.Cols {
 		return fmt.Errorf(
-			"Dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
-			tensor.Frames, tensor.Rows, tensor.Cols, other.Frames, other.Rows, other.Cols,
+			"dimensions must match: (%d, %d, %d) != (%d, %d, %d)",
+			t.Frames, t.Rows, t.Cols, other.Frames, other.Rows, other.Cols,
 		)
 	}
-	tensor.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
+	t.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
 		return current * other.Get(frame, row, col)
 	})
 	return nil
 }
 
 // ApplyFunction applies the input function to all the values of the tensor.
-func (tensor *Tensor) ApplyFunction(function func(float32, int, int, int) float32) {
-	for frame := 0; frame < tensor.Frames; frame++ {
-		for row := 0; row < tensor.Rows; row++ {
-			for col := 0; col < tensor.Cols; col++ {
-				newValue := function(tensor.Get(frame, row, col), frame, row, col)
-				tensor.Set(frame, row, col, newValue)
+func (t *Tensor) ApplyFunction(function func(float32, int, int, int) float32) {
+	for frame := 0; frame < t.Frames; frame++ {
+		for row := 0; row < t.Rows; row++ {
+			for col := 0; col < t.Cols; col++ {
+				newValue := function(t.Get(frame, row, col), frame, row, col)
+				t.Set(frame, row, col, newValue)
 			}
 		}
 	}
 }
 
 // String creates a string representation of the tensor.
-func (tensor *Tensor) String() string {
+func (t *Tensor) String() string {
 	str := ""
-	for frame := 0; frame < tensor.Frames; frame++ {
-		for row := 0; row < tensor.Rows; row++ {
-			for col := 0; col < tensor.Cols; col++ {
-				str += fmt.Sprintf("%.4f", tensor.Get(frame, row, col))
-				if col == tensor.Cols-1 {
+	for frame := 0; frame < t.Frames; frame++ {
+		for row := 0; row < t.Rows; row++ {
+			for col := 0; col < t.Cols; col++ {
+				str += fmt.Sprintf("%.4f", t.Get(frame, row, col))
+				if col == t.Cols-1 {
 					str += "\n"
 				} else {
 					str += " "
 				}
 			}
-			if row == tensor.Rows-1 {
+			if row == t.Rows-1 {
 				str += "\n"
 			}
 		}
@@ -285,31 +285,31 @@ func (tensor *Tensor) String() string {
 }
 
 // MatrixMultiply multiplies two matrices across the frames of two tensors.
-func MatrixMultiply(tensor1 *Tensor, tensor2 *Tensor, target *Tensor) (*Tensor, error) {
-	if tensor1.Frames != tensor2.Frames {
-		return nil, fmt.Errorf("Tensor frame lengths do not match: %d != %d", tensor1.Frames, tensor2.Frames)
+func MatrixMultiply(source1 *Tensor, source2 *Tensor, dest *Tensor) (*Tensor, error) {
+	if source1.Frames != source2.Frames {
+		return nil, fmt.Errorf("tensor frame lengths do not match: %d != %d", source1.Frames, source2.Frames)
 	}
-	if tensor1.Cols != tensor2.Rows {
-		return nil, fmt.Errorf("Columns of first must match rows of second: %d != %d", tensor1.Cols, tensor2.Rows)
+	if source1.Cols != source2.Rows {
+		return nil, fmt.Errorf("columns of first must match rows of second: %d != %d", source1.Cols, source2.Rows)
 	}
 	var result *Tensor
-	if target != nil {
-		if target.Frames != tensor1.Frames || target.Rows != tensor1.Rows || target.Cols != tensor2.Cols {
+	if dest != nil {
+		if dest.Frames != source1.Frames || dest.Rows != source1.Rows || dest.Cols != source2.Cols {
 			return nil, fmt.Errorf(
-				"Invalid target dimensions: (%d, %d, %d) != (%d, %d, %d)",
-				target.Frames, target.Rows, target.Cols, tensor1.Frames, tensor1.Rows, tensor2.Cols,
+				"invalid dest dimensions: (%d, %d, %d) != (%d, %d, %d)",
+				dest.Frames, dest.Rows, dest.Cols, source1.Frames, source1.Rows, source2.Cols,
 			)
 		}
-		result = target
+		result = dest
 	} else {
-		result = NewEmptyTensor3D(tensor1.Frames, tensor1.Rows, tensor2.Cols)
+		result = NewEmptyTensor3D(source1.Frames, source1.Rows, source2.Cols)
 	}
-	for frame := 0; frame < tensor1.Frames; frame++ {
-		for row := 0; row < tensor1.Rows; row++ {
-			for col := 0; col < tensor2.Cols; col++ {
+	for frame := 0; frame < source1.Frames; frame++ {
+		for row := 0; row < source1.Rows; row++ {
+			for col := 0; col < source2.Cols; col++ {
 				sum := float32(0.0)
-				for i := 0; i < tensor1.Cols; i++ {
-					sum += tensor1.Get(frame, row, i) * tensor2.Get(frame, i, col)
+				for i := 0; i < source1.Cols; i++ {
+					sum += source1.Get(frame, row, i) * source2.Get(frame, i, col)
 				}
 				result.Set(frame, row, col, sum)
 			}
@@ -319,21 +319,21 @@ func MatrixMultiply(tensor1 *Tensor, tensor2 *Tensor, target *Tensor) (*Tensor, 
 }
 
 // MatrixTranspose transposes all the matrices across the frames of a tensor.
-func MatrixTranspose(tensor *Tensor, target *Tensor) (*Tensor, error) {
+func MatrixTranspose(source *Tensor, dest *Tensor) (*Tensor, error) {
 	var result *Tensor
-	if target != nil {
-		if target.Frames != tensor.Frames || target.Rows != tensor.Cols || target.Cols != tensor.Rows {
+	if dest != nil {
+		if dest.Frames != source.Frames || dest.Rows != source.Cols || dest.Cols != source.Rows {
 			return nil, fmt.Errorf(
-				"Invalid target dimensions: (%d, %d, %d) != (%d, %d, %d)",
-				target.Frames, target.Rows, target.Cols, tensor.Frames, tensor.Cols, tensor.Rows,
+				"invalid dest dimensions: (%d, %d, %d) != (%d, %d, %d)",
+				dest.Frames, dest.Rows, dest.Cols, source.Frames, source.Cols, source.Rows,
 			)
 		}
-		result = target
+		result = dest
 	} else {
-		result = NewEmptyTensor3D(tensor.Frames, tensor.Cols, tensor.Rows)
+		result = NewEmptyTensor3D(source.Frames, source.Cols, source.Rows)
 	}
 	result.ApplyFunction(func(current float32, frame int, row int, col int) float32 {
-		return tensor.Get(frame, col, row)
+		return source.Get(frame, col, row)
 	})
 	return result, nil
 }

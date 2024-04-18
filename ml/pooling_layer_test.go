@@ -1,22 +1,18 @@
-package nn
+package ml
 
-import (
-	"testing"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
-)
+import "testing"
 
 func TestPoolingLayer(t *testing.T) {
 	layer := NewPoolingLayer(4, 4, 1, 2, PoolingMax)
 
-	inputs := tsr.NewValueTensor2D([][]float32{
+	inputs := NewValueTensor2D([][]float32{
 		{4, 2, 6, 5},
 		{1, 3, 8, 7},
 		{6, 9, 3, 4},
 		{8, 7, 2, 5},
 	})
 
-	solution := tsr.NewValueTensor2D([][]float32{
+	solution := NewValueTensor2D([][]float32{
 		{4, 8},
 		{9, 5},
 	})

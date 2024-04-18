@@ -1,11 +1,9 @@
-package nn
-
-import tsr "github.com/jpmendel/ml-go/tensor"
+package ml
 
 // PoolingFunction represents a function used to find a pooled value.
 type PoolingFunction struct {
 	Method          PoolingMethod
-	FindPooledValue func(*tsr.Tensor, int, int, int, int) float32
+	FindPooledValue func(*Tensor, int, int, int, int) float32
 }
 
 // PoolingMethod is the identifying type of the pooling function.
@@ -22,7 +20,7 @@ const (
 // PoolingMax finds the maximum value in the pool.
 var PoolingMax = PoolingFunction{
 	Method: PoolingMethodMax,
-	FindPooledValue: func(matrix *tsr.Tensor, frame int, row int, col int, poolSize int) float32 {
+	FindPooledValue: func(matrix *Tensor, frame int, row int, col int, poolSize int) float32 {
 		max := matrix.Get(frame, row, col)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {
@@ -42,7 +40,7 @@ var PoolingMax = PoolingFunction{
 // PoolingAvg finds the average value of the pool.
 var PoolingAvg = PoolingFunction{
 	Method: PoolingMethodAvg,
-	FindPooledValue: func(matrix *tsr.Tensor, frame int, row int, col int, poolSize int) float32 {
+	FindPooledValue: func(matrix *Tensor, frame int, row int, col int, poolSize int) float32 {
 		total := float32(0.0)
 		for or := 0; or < poolSize; or++ {
 			for oc := 0; oc < poolSize; oc++ {

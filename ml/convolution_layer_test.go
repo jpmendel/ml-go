@@ -1,16 +1,12 @@
-package nn
+package ml
 
-import (
-	"testing"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
-)
+import "testing"
 
 func TestConvolutionLayer(t *testing.T) {
-	filters := []*tsr.Tensor{FilterVerticalEdges}
+	filters := []*Tensor{FilterVerticalEdges}
 	layer := NewConvolutionLayer(5, 5, 1, filters, ActivationRELU)
 
-	inputs := tsr.NewValueTensor2D([][]float32{
+	inputs := NewValueTensor2D([][]float32{
 		{0, 1, 0.5, 1, 0},
 		{0.5, 1, 0.5, 1, 0.5},
 		{0, 0.5, 0.5, 0.5, 0},
@@ -18,7 +14,7 @@ func TestConvolutionLayer(t *testing.T) {
 		{0, 0, 0.5, 0, 0},
 	})
 
-	solution := tsr.NewValueTensor2D([][]float32{
+	solution := NewValueTensor2D([][]float32{
 		{2, 0.5, 0, 0, 0},
 		{2.5, 1, 0, 0, 0},
 		{2.5, 1, 0, 0, 0},

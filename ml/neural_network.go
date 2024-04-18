@@ -1,11 +1,9 @@
-package nn
+package ml
 
 import (
 	"encoding/json"
 	"fmt"
 	"os"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
 )
 
 // NeuralNetwork is a basic neural network that can handle multiple layer types.
@@ -19,32 +17,32 @@ func NewNeuralNetwork() *NeuralNetwork {
 }
 
 // Copy creates a deep copy of the neural network.
-func (neuralNetwork *NeuralNetwork) Copy() *NeuralNetwork {
-	newNeuralNetwork := NewNeuralNetwork()
-	for _, layer := range neuralNetwork.layers {
-		newNeuralNetwork.Add(layer.Copy())
+func (nn *NeuralNetwork) Copy() *NeuralNetwork {
+	new := NewNeuralNetwork()
+	for _, layer := range nn.layers {
+		new.Add(layer.Copy())
 	}
-	return newNeuralNetwork
+	return new
 }
 
 // LayerCount returns the number of layers in the neural network.
-func (neuralNetwork *NeuralNetwork) LayerCount() int {
-	return len(neuralNetwork.layers)
+func (nn *NeuralNetwork) LayerCount() int {
+	return len(nn.layers)
 }
 
 // LayerAt gets a layer at a certain index.
-func (neuralNetwork *NeuralNetwork) LayerAt(index int) Layer {
-	if index < 0 || index >= len(neuralNetwork.layers) {
+func (nn *NeuralNetwork) LayerAt(index int) Layer {
+	if index < 0 || index >= len(nn.layers) {
 		return nil
 	}
-	return neuralNetwork.layers[index]
+	return nn.layers[index]
 }
 
 // Add adds a number of new layers to the neural network.
-func (neuralNetwork *NeuralNetwork) Add(layers ...Layer) error {
+func (nn *NeuralNetwork) Add(layers ...Layer) error {
 	for _, layer := range layers {
-		if len(neuralNetwork.layers) > 0 {
-			lastLayer := neuralNetwork.layers[len(neuralNetwork.layers)-1]
+		if len(nn.layers) > 0 {
+			lastLayer := nn.layers[len(nn.layers)-1]
 			if lastLayer.OutputShape() != layer.InputShape() {
 				return fmt.Errorf(
 					"output shape of last layer does not match input shape of new layer: (%d, %d, %d) != (%d, %d, %d)",
@@ -53,14 +51,14 @@ func (neuralNetwork *NeuralNetwork) Add(layers ...Layer) error {
 				)
 			}
 		}
-		neuralNetwork.layers = append(neuralNetwork.layers, layer)
+		nn.layers = append(nn.layers, layer)
 	}
 	return nil
 }
 
 // Predict generates a prediction for a certain set of inputs.
-func (neuralNetwork *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32, error) {
-	outputs, err := neuralNetwork.feedForward(inputs)
+func (nn *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32, error) {
+	outputs, err := nn.feedForward(inputs)
 	if err != nil {
 		return nil, err
 	}
@@ -69,23 +67,23 @@ func (neuralNetwork *NeuralNetwork) Predict(inputs [][][]float32) ([][][]float32
 
 // Train takes a set of inputs and their respective targets, and adjusts the layers to produce the
 // given outputs through supervised learning.
-func (neuralNetwork *NeuralNetwork) Train(inputs [][][]float32, targets [][][]float32, learningRate float32, momentum float32) error {
-	outputs, err := neuralNetwork.feedForward(inputs)
+func (nn *NeuralNetwork) Train(inputs [][][]float32, targets [][][]float32, learningRate float32, momentum float32) error {
+	outputs, err := nn.feedForward(inputs)
 	if err != nil {
 		return err
 	}
-	deltas := tsr.NewValueTensor3D(targets)
+	deltas := NewValueTensor3D(targets)
 	err = deltas.SubtractTensor(outputs)
 	if err != nil {
 		return err
 	}
-	return neuralNetwork.backPropagate(deltas, learningRate, momentum)
+	return nn.backPropagate(deltas, learningRate, momentum)
 }
 
-func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) (*tsr.Tensor, error) {
-	nextInputs := tsr.NewValueTensor3D(inputs)
+func (nn *NeuralNetwork) feedForward(inputs [][][]float32) (*Tensor, error) {
+	nextInputs := NewValueTensor3D(inputs)
 	var err error
-	for _, layer := range neuralNetwork.layers {
+	for _, layer := range nn.layers {
 		nextInputs, err = layer.FeedForward(nextInputs)
 		if err != nil {
 			return nil, err
@@ -94,11 +92,11 @@ func (neuralNetwork *NeuralNetwork) feedForward(inputs [][][]float32) (*tsr.Tens
 	return nextInputs, nil
 }
 
-func (neuralNetwork *NeuralNetwork) backPropagate(deltas *tsr.Tensor, learningRate float32, momentum float32) error {
+func (nn *NeuralNetwork) backPropagate(deltas *Tensor, learningRate float32, momentum float32) error {
 	nextDeltas := deltas
 	var err error
-	for i := len(neuralNetwork.layers) - 1; i >= 0; i-- {
-		layer := neuralNetwork.layers[i]
+	for i := len(nn.layers) - 1; i >= 0; i-- {
+		layer := nn.layers[i]
 		nextDeltas, err = layer.BackPropagate(nextDeltas, learningRate, momentum)
 		if err != nil {
 			return err
@@ -108,35 +106,35 @@ func (neuralNetwork *NeuralNetwork) backPropagate(deltas *tsr.Tensor, learningRa
 }
 
 // SaveToFile saves a neural network to a file.
-func (neuralNetwork *NeuralNetwork) SaveToFile(fileName string) error {
+func (nn *NeuralNetwork) SaveToFile(fileName string) error {
 	file, err := os.Create(fileName)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	neuralNetworkData := struct {
+	nnData := struct {
 		Layers []Layer `json:"layers"`
 	}{
-		Layers: neuralNetwork.layers,
+		Layers: nn.layers,
 	}
-	return json.NewEncoder(file).Encode(neuralNetworkData)
+	return json.NewEncoder(file).Encode(nnData)
 }
 
 // LoadFromFile loads a neural network from a file.
-func (neuralNetwork *NeuralNetwork) LoadFromFile(fileName string) error {
+func (nn *NeuralNetwork) LoadFromFile(fileName string) error {
 	file, err := os.Open(fileName)
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-	neuralNetworkData := struct {
+	nnData := struct {
 		Layers []map[string]interface{} `json:"layers"`
 	}{}
-	err = json.NewDecoder(file).Decode(&neuralNetworkData)
+	err = json.NewDecoder(file).Decode(&nnData)
 	if err != nil {
 		return err
 	}
-	for _, layerData := range neuralNetworkData.Layers {
+	for _, layerData := range nnData.Layers {
 		layerType, _ := layerData["type"].(string)
 		layer, err := layerForType(LayerType(layerType))
 		if err != nil {
@@ -147,7 +145,7 @@ func (neuralNetwork *NeuralNetwork) LoadFromFile(fileName string) error {
 		if err != nil {
 			return err
 		}
-		err = neuralNetwork.Add(layer)
+		err = nn.Add(layer)
 		if err != nil {
 			return err
 		}

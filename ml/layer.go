@@ -1,18 +1,14 @@
-package nn
+package ml
 
-import (
-	"fmt"
-
-	tsr "github.com/jpmendel/ml-go/tensor"
-)
+import "fmt"
 
 // Layer is a stage of data computation in a neural network.
 type Layer interface {
 	Copy() Layer
 	InputShape() LayerShape
 	OutputShape() LayerShape
-	FeedForward(inputs *tsr.Tensor) (*tsr.Tensor, error)
-	BackPropagate(outputs *tsr.Tensor, learningRate float32, momentum float32) (*tsr.Tensor, error)
+	FeedForward(inputs *Tensor) (*Tensor, error)
+	BackPropagate(outputs *Tensor, learningRate float32, momentum float32) (*Tensor, error)
 }
 
 // LayerType represents the type of layer.

@@ -1,4 +1,4 @@
-package nn
+package ml
 
 import (
 	"math/rand"
